@@ -569,9 +569,12 @@ var ChannelsClient = (function () {
     };
     ChannelsClient.prototype.getInviteInfo = function (inviteCode) {
         return __awaiter(this, void 0, void 0, function () {
+            var headers;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, rest_1.Rest.get(inviteCode)];
+                    case 0:
+                        headers = { Accept: "application/json" };
+                        return [4 /*yield*/, rest_1.Rest.get(inviteCode, headers)];
                     case 1: return [2 /*return*/, _a.sent()];
                 }
             });

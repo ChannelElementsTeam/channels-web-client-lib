@@ -269,7 +269,8 @@ class ChannelsClient {
   }
 
   async getInviteInfo(inviteCode: string): Promise<ShareCodeResponse> {
-    return await Rest.get<ShareCodeResponse>(inviteCode);
+    const headers = { "Content-Type": "application/json" };
+    return await Rest.get<ShareCodeResponse>(inviteCode, headers);
   }
 
   async acceptInvitation(inviteCode: string, identity: any, participantDetails: any): Promise<GetChannelResponse> {
