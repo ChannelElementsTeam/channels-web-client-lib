@@ -1,0 +1,18 @@
+{
+  "name": "channels-web-client-lib",
+  "description": "Web client side library to talk to a channels server.",
+  "main": "channels-web-client-lib.js",
+  "authors": [
+    "Hivepoint",
+    "Inc."
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/ChannelElementsTeam/channels-web-client-lib",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
