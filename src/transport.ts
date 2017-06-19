@@ -161,7 +161,7 @@ export class TransportManager {
           case 'history-message': {
             if (this.historyMessageHandler) {
               const binaryMessage = message.controlMessagePayload.binaryPortion;
-              const parsedMessage = ChannelMessageUtils.parseChannelMessage(binaryMessage);
+              const parsedMessage = ChannelMessageUtils.parseChannelMessage(binaryMessage, false);
               if (parsedMessage && parsedMessage.valid) {
                 const historyMessageInfo = parsedMessage.contents;
                 try {

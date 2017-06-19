@@ -1984,7 +1984,7 @@ var TransportManager = (function () {
                     case 'history-message': {
                         if (this.historyMessageHandler) {
                             var binaryMessage = message.controlMessagePayload.binaryPortion;
-                            var parsedMessage = utils_1.ChannelMessageUtils.parseChannelMessage(binaryMessage);
+                            var parsedMessage = utils_1.ChannelMessageUtils.parseChannelMessage(binaryMessage, false);
                             if (parsedMessage && parsedMessage.valid) {
                                 var historyMessageInfo = parsedMessage.contents;
                                 try {
