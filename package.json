@@ -1,0 +1,28 @@
+{
+  "name": "channels-web-client-lib",
+  "version": "0.1.0",
+  "description": "Web client side library to talk to a channels server.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChannelElementsTeam/channels-web-client-lib.git"
+  },
+  "author": "Hivepoint, Inc.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ChannelElementsTeam/channels-web-client-lib/issues"
+  },
+  "homepage": "https://github.com/ChannelElementsTeam/channels-web-client-lib#readme",
+  "devDependencies": {
+    "@types/text-encoding": "0.0.30",
+    "ts-loader": "^2.1.0",
+    "typescript": "^2.3.4",
+    "webpack": "^3.0.0"
+  },
+  "dependencies": {
+    "text-encoding-utf-8": "^1.0.1"
+  }
+}
