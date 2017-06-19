@@ -1,5 +1,5 @@
 import { RegistrationResponse, ChannelMessage, ControlChannelMessage, MessageToSerialize, DeserializedMessage } from './interfaces';
-import { TextDecoder, TextEncoder } from 'text-encoding';
+import { TextDecoder, TextEncoder } from 'text-encoding-utf-8';
 
 export class Utils {
   static createAuth(registry: RegistrationResponse): string {

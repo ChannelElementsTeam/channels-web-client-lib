@@ -17,7 +17,6 @@
   },
   "homepage": "https://github.com/ChannelElementsTeam/channels-web-client-lib#readme",
   "devDependencies": {
-    "@types/text-encoding": "0.0.30",
     "ts-loader": "^2.1.0",
     "typescript": "^2.3.4",
     "webpack": "^3.0.0"

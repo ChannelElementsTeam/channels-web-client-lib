@@ -37,7 +37,7 @@ export class ClientDb {
     });
   }
 
-  getStore(name: string, mode: string): IDBObjectStore {
+  getStore(name: string, mode: IDBTransactionMode): IDBObjectStore {
     const tx = this.db.transaction(name, mode);
     return tx.objectStore(name);
   }
