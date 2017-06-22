@@ -48,7 +48,7 @@ export class ClientDb {
       try {
         const request = store.add(registry);
         request.onerror = (event) => {
-          reject(new Error("Error loading database: " + event));
+          reject(new Error("Error saving registry: " + event));
         };
         request.onsuccess = (event) => {
           resolve();

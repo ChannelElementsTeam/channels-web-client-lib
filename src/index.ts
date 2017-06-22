@@ -107,108 +107,102 @@ class ChannelsClient {
     }
   }
 
-  addChannelDeletedListener(listener: ChannelDeletedListener) {
-    if (listener) {
-      this.channelDeletedListeners.push(listener);
-    }
-  }
-
-  removeChannelDeletedListener(listener: ChannelDeletedListener) {
-    if (listener) {
-      let index = -1;
-      for (let i = 0; i < this.channelDeletedListeners.length; i++) {
-        if (listener === this.channelDeletedListeners[i]) {
-          index = i;
-          break;
+  addChannelListener(name: string, channelId: string, listener: any): void {
+    switch (name) {
+      case 'delete':
+        this.channelDeletedListeners.push(listener);
+        break;
+      case 'participant':
+        if (!this.channelParticipantListeners[channelId]) {
+          this.channelParticipantListeners[channelId] = [];
         }
-      }
-      if (index >= 0) {
-        this.channelDeletedListeners.splice(index, 1);
-      }
+        this.channelParticipantListeners[channelId].push(listener);
+        break;
+      case 'message':
+        if (!this.channelMessageCallbacks[channelId]) {
+          this.channelMessageCallbacks[channelId] = [];
+        }
+        this.channelMessageCallbacks[channelId].push(listener);
+        break;
+      case 'history-message':
+        if (!this.historyCallbacks[channelId]) {
+          this.historyCallbacks[channelId] = [];
+        }
+        this.historyCallbacks[channelId].push(listener);
+        break;
+      default:
+        break;
     }
   }
 
-  addChannelParticipantListener(channelId: string, cb: ParticipantListener) {
-    if (channelId && cb) {
-      if (!this.channelParticipantListeners[channelId]) {
-        this.channelParticipantListeners[channelId] = [];
-      }
-      this.channelParticipantListeners[channelId].push(cb);
-    }
-  }
-
-  removeChannelParticipantListener(channelId: string, cb: ParticipantListener) {
-    if (cb && channelId) {
-      const list = this.channelParticipantListeners[channelId];
-      if (list) {
+  removeChannelListener(name: string, channelId: string, listener: any) {
+    switch (name) {
+      case 'delete': {
         let index = -1;
-        for (let i = 0; i < list.length; i++) {
-          if (cb === list[i]) {
+        for (let i = 0; i < this.channelDeletedListeners.length; i++) {
+          if (listener === this.channelDeletedListeners[i]) {
             index = i;
             break;
           }
         }
         if (index >= 0) {
-          list.splice(index, 1);
-          this.channelParticipantListeners[channelId] = list;
+          this.channelDeletedListeners.splice(index, 1);
         }
+        break;
       }
-    }
-  }
-
-  addChannelMessageListener(channelId: string, cb: MessageCallback) {
-    if (cb && channelId) {
-      if (!this.channelMessageCallbacks[channelId]) {
-        this.channelMessageCallbacks[channelId] = [];
-      }
-      this.channelMessageCallbacks[channelId].push(cb);
-    }
-  }
-
-  removeChannelMessageListener(channelId: string, cb: MessageCallback) {
-    if (cb && channelId) {
-      const list = this.channelMessageCallbacks[channelId];
-      if (list) {
-        let index = -1;
-        for (let i = 0; i < list.length; i++) {
-          if (cb === list[i]) {
-            index = i;
-            break;
+      case 'participant': {
+        const list = this.channelParticipantListeners[channelId];
+        if (list) {
+          let index = -1;
+          for (let i = 0; i < list.length; i++) {
+            if (listener === list[i]) {
+              index = i;
+              break;
+            }
+          }
+          if (index >= 0) {
+            list.splice(index, 1);
+            this.channelParticipantListeners[channelId] = list;
           }
         }
-        if (index >= 0) {
-          list.splice(index, 1);
-          this.channelMessageCallbacks[channelId] = list;
-        }
+        break;
       }
-    }
-  }
-
-  addHistoryMessageListener(channelId: string, cb: HistoryMessageCallback) {
-    if (cb && channelId) {
-      if (!this.historyCallbacks[channelId]) {
-        this.historyCallbacks[channelId] = [];
-      }
-      this.historyCallbacks[channelId].push(cb);
-    }
-  }
-
-  removeHistoryMessageListener(channelId: string, cb: HistoryMessageCallback) {
-    if (cb && channelId) {
-      const list = this.historyCallbacks[channelId];
-      if (list) {
-        let index = -1;
-        for (let i = 0; i < list.length; i++) {
-          if (cb === list[i]) {
-            index = i;
-            break;
+      case 'message': {
+        const list = this.channelMessageCallbacks[channelId];
+        if (list) {
+          let index = -1;
+          for (let i = 0; i < list.length; i++) {
+            if (listener === list[i]) {
+              index = i;
+              break;
+            }
+          }
+          if (index >= 0) {
+            list.splice(index, 1);
+            this.channelMessageCallbacks[channelId] = list;
           }
         }
-        if (index >= 0) {
-          list.splice(index, 1);
-          this.historyCallbacks[channelId] = list;
-        }
+        break;
       }
+      case 'history-message': {
+        const list = this.historyCallbacks[channelId];
+        if (list) {
+          let index = -1;
+          for (let i = 0; i < list.length; i++) {
+            if (listener === list[i]) {
+              index = i;
+              break;
+            }
+          }
+          if (index >= 0) {
+            list.splice(index, 1);
+            this.historyCallbacks[channelId] = list;
+          }
+        }
+        break;
+      }
+      default:
+        break;
     }
   }
 
@@ -421,24 +415,11 @@ class ChannelsClient {
     return payload;
   }
 
-  async sendMessage(channelId: string, jsonPayload: any, binaryPayload?: Uint8Array, history?: boolean, priority?: boolean): Promise<MessageToSerialize> {
+  async sendMessage(channelId: string, message: MessageToSerialize): Promise<MessageToSerialize> {
     return new Promise<MessageToSerialize>((resolve, reject) => {
-      const joinInfo = this.joinedChannels[channelId];
-      if (!joinInfo) {
-        reject(new Error("Trying to send message to an unjoined channel"));
-        return;
-      }
-      const messageInfo: MessageToSerialize = {
-        channelCode: joinInfo.channelCode,
-        senderCode: joinInfo.participantCode,
-        history: history ? true : false,
-        priority: priority ? true : false,
-        jsonMessage: jsonPayload,
-        binaryPayload: binaryPayload
-      };
       try {
-        this.transport.send(channelId, messageInfo);
-        resolve(messageInfo);
+        this.transport.send(channelId, message);
+        resolve(message);
       } catch (err) {
         reject(err);
       }

@@ -359,101 +359,101 @@ var ChannelsClient = (function () {
             default: break;
         }
     };
-    ChannelsClient.prototype.addChannelDeletedListener = function (listener) {
-        if (listener) {
-            this.channelDeletedListeners.push(listener);
-        }
-    };
-    ChannelsClient.prototype.removeChannelDeletedListener = function (listener) {
-        if (listener) {
-            var index = -1;
-            for (var i = 0; i < this.channelDeletedListeners.length; i++) {
-                if (listener === this.channelDeletedListeners[i]) {
-                    index = i;
-                    break;
+    ChannelsClient.prototype.addChannelListener = function (name, channelId, listener) {
+        switch (name) {
+            case 'delete':
+                this.channelDeletedListeners.push(listener);
+                break;
+            case 'participant':
+                if (!this.channelParticipantListeners[channelId]) {
+                    this.channelParticipantListeners[channelId] = [];
                 }
-            }
-            if (index >= 0) {
-                this.channelDeletedListeners.splice(index, 1);
-            }
+                this.channelParticipantListeners[channelId].push(listener);
+                break;
+            case 'message':
+                if (!this.channelMessageCallbacks[channelId]) {
+                    this.channelMessageCallbacks[channelId] = [];
+                }
+                this.channelMessageCallbacks[channelId].push(listener);
+                break;
+            case 'history-message':
+                if (!this.historyCallbacks[channelId]) {
+                    this.historyCallbacks[channelId] = [];
+                }
+                this.historyCallbacks[channelId].push(listener);
+                break;
+            default:
+                break;
         }
     };
-    ChannelsClient.prototype.addChannelParticipantListener = function (channelId, cb) {
-        if (channelId && cb) {
-            if (!this.channelParticipantListeners[channelId]) {
-                this.channelParticipantListeners[channelId] = [];
-            }
-            this.channelParticipantListeners[channelId].push(cb);
-        }
-    };
-    ChannelsClient.prototype.removeChannelParticipantListener = function (channelId, cb) {
-        if (cb && channelId) {
-            var list = this.channelParticipantListeners[channelId];
-            if (list) {
+    ChannelsClient.prototype.removeChannelListener = function (name, channelId, listener) {
+        switch (name) {
+            case 'delete': {
                 var index = -1;
-                for (var i = 0; i < list.length; i++) {
-                    if (cb === list[i]) {
+                for (var i = 0; i < this.channelDeletedListeners.length; i++) {
+                    if (listener === this.channelDeletedListeners[i]) {
                         index = i;
                         break;
                     }
                 }
                 if (index >= 0) {
-                    list.splice(index, 1);
-                    this.channelParticipantListeners[channelId] = list;
+                    this.channelDeletedListeners.splice(index, 1);
                 }
+                break;
             }
-        }
-    };
-    ChannelsClient.prototype.addChannelMessageListener = function (channelId, cb) {
-        if (cb && channelId) {
-            if (!this.channelMessageCallbacks[channelId]) {
-                this.channelMessageCallbacks[channelId] = [];
-            }
-            this.channelMessageCallbacks[channelId].push(cb);
-        }
-    };
-    ChannelsClient.prototype.removeChannelMessageListener = function (channelId, cb) {
-        if (cb && channelId) {
-            var list = this.channelMessageCallbacks[channelId];
-            if (list) {
-                var index = -1;
-                for (var i = 0; i < list.length; i++) {
-                    if (cb === list[i]) {
-                        index = i;
-                        break;
+            case 'participant': {
+                var list = this.channelParticipantListeners[channelId];
+                if (list) {
+                    var index = -1;
+                    for (var i = 0; i < list.length; i++) {
+                        if (listener === list[i]) {
+                            index = i;
+                            break;
+                        }
+                    }
+                    if (index >= 0) {
+                        list.splice(index, 1);
+                        this.channelParticipantListeners[channelId] = list;
                     }
                 }
-                if (index >= 0) {
-                    list.splice(index, 1);
-                    this.channelMessageCallbacks[channelId] = list;
-                }
+                break;
             }
-        }
-    };
-    ChannelsClient.prototype.addHistoryMessageListener = function (channelId, cb) {
-        if (cb && channelId) {
-            if (!this.historyCallbacks[channelId]) {
-                this.historyCallbacks[channelId] = [];
-            }
-            this.historyCallbacks[channelId].push(cb);
-        }
-    };
-    ChannelsClient.prototype.removeHistoryMessageListener = function (channelId, cb) {
-        if (cb && channelId) {
-            var list = this.historyCallbacks[channelId];
-            if (list) {
-                var index = -1;
-                for (var i = 0; i < list.length; i++) {
-                    if (cb === list[i]) {
-                        index = i;
-                        break;
+            case 'message': {
+                var list = this.channelMessageCallbacks[channelId];
+                if (list) {
+                    var index = -1;
+                    for (var i = 0; i < list.length; i++) {
+                        if (listener === list[i]) {
+                            index = i;
+                            break;
+                        }
+                    }
+                    if (index >= 0) {
+                        list.splice(index, 1);
+                        this.channelMessageCallbacks[channelId] = list;
                     }
                 }
-                if (index >= 0) {
-                    list.splice(index, 1);
-                    this.historyCallbacks[channelId] = list;
-                }
+                break;
             }
+            case 'history-message': {
+                var list = this.historyCallbacks[channelId];
+                if (list) {
+                    var index = -1;
+                    for (var i = 0; i < list.length; i++) {
+                        if (listener === list[i]) {
+                            index = i;
+                            break;
+                        }
+                    }
+                    if (index >= 0) {
+                        list.splice(index, 1);
+                        this.historyCallbacks[channelId] = list;
+                    }
+                }
+                break;
+            }
+            default:
+                break;
         }
     };
     ChannelsClient.prototype.ensureDb = function () {
@@ -573,7 +573,7 @@ var ChannelsClient = (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        headers = { Accept: "application/json" };
+                        headers = { "Content-Type": "application/json" };
                         return [4 /*yield*/, rest_1.Rest.get(inviteCode, headers)];
                     case 1: return [2 /*return*/, _a.sent()];
                 }
@@ -835,27 +835,14 @@ var ChannelsClient = (function () {
         var payload = new TextEncoder().encode(text);
         return payload;
     };
-    ChannelsClient.prototype.sendMessage = function (channelId, jsonPayload, binaryPayload, history, priority) {
+    ChannelsClient.prototype.sendMessage = function (channelId, message) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
-                        var joinInfo = _this.joinedChannels[channelId];
-                        if (!joinInfo) {
-                            reject(new Error("Trying to send message to an unjoined channel"));
-                            return;
-                        }
-                        var messageInfo = {
-                            channelCode: joinInfo.channelCode,
-                            senderCode: joinInfo.participantCode,
-                            history: history ? true : false,
-                            priority: priority ? true : false,
-                            jsonMessage: jsonPayload,
-                            binaryPayload: binaryPayload
-                        };
                         try {
-                            _this.transport.send(channelId, messageInfo);
-                            resolve(messageInfo);
+                            _this.transport.send(channelId, message);
+                            resolve(message);
                         }
                         catch (err) {
                             reject(err);
@@ -1109,7 +1096,7 @@ var ClientDb = (function () {
             try {
                 var request = store.add(registry);
                 request.onerror = function (event) {
-                    reject(new Error("Error loading database: " + event));
+                    reject(new Error("Error saving registry: " + event));
                 };
                 request.onsuccess = function (event) {
                     resolve();
