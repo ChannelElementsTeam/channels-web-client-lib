@@ -97,10 +97,12 @@ export class TransportManager {
           info.connecting = false;
           info.pendingCallbacks = [];
         }
+        console.error("Socket error: ", error);
       };
       socket.onclose = (event) => {
         info.connected = false;
         info.connecting = false;
+        console.error("Socket closed: ", event);
       };
       socket.onmessage = (event) => {
         this.onMessageReceived(info, event);

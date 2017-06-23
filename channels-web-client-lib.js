@@ -1909,10 +1909,12 @@ var TransportManager = (function () {
                     info.connecting = false;
                     info.pendingCallbacks = [];
                 }
+                console.error("Socket error: ", error);
             };
             socket_1.onclose = function (event) {
                 info.connected = false;
                 info.connecting = false;
+                console.error("Socket closed: ", event);
             };
             socket_1.onmessage = function (event) {
                 _this.onMessageReceived(info, event);
