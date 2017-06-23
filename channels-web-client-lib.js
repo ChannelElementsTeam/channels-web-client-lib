@@ -835,6 +835,9 @@ var ChannelsClient = (function () {
         var payload = new TextEncoder().encode(text);
         return payload;
     };
+    ChannelsClient.prototype.decode = function (binary, json) {
+        return new TextDecoder('utf-8').decode(binary);
+    };
     ChannelsClient.prototype.sendMessage = function (channelId, message) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
