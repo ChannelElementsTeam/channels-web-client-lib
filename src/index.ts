@@ -415,6 +415,10 @@ class ChannelsClient {
     return payload;
   }
 
+  decode(binary: Uint8Array, json?: boolean): string {
+    return new TextDecoder('utf-8').decode(binary);
+  }
+
   async sendMessage(channelId: string, message: MessageToSerialize): Promise<MessageToSerialize> {
     return new Promise<MessageToSerialize>((resolve, reject) => {
       try {
