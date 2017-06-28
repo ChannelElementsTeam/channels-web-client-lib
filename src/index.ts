@@ -1,15 +1,15 @@
 import { Rest } from './rest';
 import { ClientDb } from './db';
-import { Utils } from './utils';
 import { TransportManager, MessageCallback, HistoryMessageCallback } from './transport';
 import {
-  RegistrationResponse, ChannelServerResponse, ChannelCreateRequest, GetChannelResponse, ChannelDeletedNotificationDetails,
-  JoinResponseDetails, ChannelMessage, JoinNotificationDetails, LeaveNotificationDetails, ShareRequest, ShareResponse, ShareCodeResponse,
-  ChannelJoinRequest, ChannelListResponse, MessageToSerialize, ChannelDeleteResponseDetails, HistoryResponseDetails, LeaveRequestDetails,
+  ChannelDeletedNotificationDetails, ChannelServiceDescription, ChannelCreateDetails, ChannelCreateResponse, SignedKeyIdentity, ChannelInformation,
+  ChannelServiceRequest, SignedAddressIdentity, ChannelShareDetails, ChannelShareResponse, ChannelShareCodeResponse, MemberContractDetails, ChannelDeleteResponse,
+  JoinResponseDetails, ChannelMessage, JoinNotificationDetails, LeaveNotificationDetails, ChannelAcceptResponse, ChannelAcceptDetails, ChannelDeleteDetails,
+  MessageToSerialize, HistoryResponseDetails, LeaveRequestDetails, ChannelsListDetails, ChannelsListResponse, ChannelGetResponse, ChannelGetDetails,
   HistoryRequestDetails, JoinRequestDetails
-} from './interfaces';
+} from 'channels-common';
 
-export * from './interfaces';
+export * from 'channels-common';
 
 export type ParticipantListener = (joined: JoinNotificationDetails, left: LeaveNotificationDetails) => void;
 export type ChannelDeletedListener = (details: ChannelDeletedNotificationDetails) => void;
@@ -17,11 +17,11 @@ export type ChannelDeletedListener = (details: ChannelDeletedNotificationDetails
 class ChannelsClient {
   private db: ClientDb;
   private transport: TransportManager;
-  private joinedChannels: { [channelId: string]: JoinResponseDetails } = {};
-  private joinedChannelsByCode: { [channelCode: string]: JoinResponseDetails } = {};
-  private historyCallbacks: { [channelId: string]: HistoryMessageCallback[] } = {};
-  private channelMessageCallbacks: { [channelId: string]: MessageCallback[] } = {};
-  private channelParticipantListeners: { [channelId: string]: ParticipantListener[] } = {};
+  private joinedChannels: { [channelAddress: string]: JoinResponseDetails } = {};
+  private joinedChannelsByCode: { [code: string]: JoinResponseDetails } = {};
+  private historyCallbacks: { [channelAddress: string]: HistoryMessageCallback[] } = {};
+  private channelMessageCallbacks: { [channelAddress: string]: MessageCallback[] } = {};
+  private channelParticipantListeners: { [channelAddress: string]: ParticipantListener[] } = {};
   private channelDeletedListeners: ChannelDeletedListener[] = [];
 
   constructor() {
@@ -31,7 +31,7 @@ class ChannelsClient {
     this.transport.historyMessageHandler = (details, message) => {
       const joinInfo = this.joinedChannelsByCode[message.channelCode];
       if (joinInfo) {
-        const cbList = this.historyCallbacks[joinInfo.channelId];
+        const cbList = this.historyCallbacks[joinInfo.channelAddress];
         if (cbList) {
           for (const cb of cbList) {
             try {
@@ -46,7 +46,7 @@ class ChannelsClient {
       if (!err) {
         const joinInfo = this.joinedChannelsByCode[message.channelCode];
         if (joinInfo) {
-          const cbList = this.channelMessageCallbacks[joinInfo.channelId];
+          const cbList = this.channelMessageCallbacks[joinInfo.channelAddress];
           if (cbList) {
             for (const cb of cbList) {
               try {
@@ -70,7 +70,7 @@ class ChannelsClient {
     switch (controlMessage.type) {
       case 'join-notification': {
         const joinNotification = controlMessage.details as JoinNotificationDetails;
-        const cbList = this.channelParticipantListeners[joinNotification.channelId];
+        const cbList = this.channelParticipantListeners[joinNotification.channelAddress];
         if (cbList) {
           for (const cb of cbList) {
             try {
@@ -82,7 +82,7 @@ class ChannelsClient {
       }
       case 'leave-notification': {
         const leaveNotification = controlMessage.details as LeaveNotificationDetails;
-        const cbList = this.channelParticipantListeners[leaveNotification.channelId];
+        const cbList = this.channelParticipantListeners[leaveNotification.channelAddress];
         if (cbList) {
           for (const cb of cbList) {
             try {
@@ -210,101 +210,79 @@ class ChannelsClient {
     await this.db.open();
   }
 
-  async register(serverUrl: string, identity: any): Promise<RegistrationResponse> {
+  async getProvider(serverUrl: string): Promise<ChannelServiceDescription> {
     await this.ensureDb();
-    const cached = await this.db.getRegistry(null, serverUrl);
+    const cached = await this.db.getProvider(serverUrl);
     if (cached) {
       return cached;
     }
-    const serverInfo = await Rest.get<ChannelServerResponse>(serverUrl);
-    if (serverInfo && serverInfo.services.registrationUrl) {
-      const response = await this.getRegistry(serverInfo.services.registrationUrl, identity);
-      return response;
-    } else {
-      throw new Error("Failed to fetch channel server info.");
+    const providerInfo = await Rest.get<ChannelServiceDescription>(serverUrl);
+    if (providerInfo && providerInfo.serviceEndpoints) {
+      await this.db.saveProvider(serverUrl, providerInfo);
+      return providerInfo;
     }
+    console.error("Failed to fetch provider info - invalid response", providerInfo);
+    throw new Error("Failed to fetch provider info - invalid response");
   }
 
-  private async getRegistry(registryUrl: string, identity: any): Promise<RegistrationResponse> {
-    await this.ensureDb();
-    const cached = await this.db.getRegistry(registryUrl);
-    if (cached) {
-      return cached;
-    }
-    const response = await Rest.post<RegistrationResponse>(registryUrl, {
-      identity: identity || {}
-    });
-    if (response) {
-      await this.db.saveRegistry(response);
-      return response;
-    } else {
-      throw new Error("Failed to register with server at " + registryUrl);
-    }
-  }
-
-  async createChannel(registryUrl: string, request: ChannelCreateRequest = {}): Promise<GetChannelResponse> {
-    await this.ensureDb();
-    const registry = await this.db.getRegistry(registryUrl);
-    if (!registry) {
-      throw new Error("Failed to create channel: Provider is not registered");
-    }
-    const headers = { Authorization: Utils.createAuth(registry) };
-    return await Rest.post<GetChannelResponse>(registry.services.createChannelUrl, request, headers);
-  }
-
-  async shareChannel(registerUrl: string, request: ShareRequest): Promise<ShareResponse> {
-    await this.ensureDb();
-    const registry = await this.db.getRegistry(registerUrl);
-    if (!registry) {
-      throw new Error("Failed to create channel: Provider is not registered");
-    }
-    const headers = { Authorization: Utils.createAuth(registry) };
-    return await Rest.post<ShareResponse>(registry.services.shareChannelUrl, request, headers);
-  }
-
-  async getInviteInfo(inviteCode: string): Promise<ShareCodeResponse> {
-    const headers = { "Content-Type": "application/json" };
-    return await Rest.get<ShareCodeResponse>(inviteCode, headers);
-  }
-
-  async acceptInvitation(inviteCode: string, identity: any, participantDetails: any): Promise<GetChannelResponse> {
-    const shareCodeResponse = await this.getInviteInfo(inviteCode);
-    if (!shareCodeResponse) {
-      throw new Error("Invalid share code");
-    }
-    const registry = await this.register(shareCodeResponse.providerUrl, identity);
-    const request: ChannelJoinRequest = {
-      invitationId: shareCodeResponse.invitationId,
-      details: participantDetails
+  async createChannel(providerUrl: string, identity: SignedKeyIdentity, details: ChannelCreateDetails): Promise<ChannelCreateResponse> {
+    const provider = await this.getProvider(providerUrl);
+    const request: ChannelServiceRequest<SignedKeyIdentity, ChannelCreateDetails> = {
+      type: 'create',
+      identity: identity,
+      details: details
     };
-    const headers = { Authorization: Utils.createAuth(registry) };
-    return await Rest.post<GetChannelResponse>(shareCodeResponse.acceptChannelUrl, request, headers);
+    return await Rest.post<ChannelCreateResponse>(provider.serviceEndpoints.restServiceUrl, request);
   }
 
-  async getChannelsWithProvider(url: string): Promise<GetChannelResponse[]> {
-    await this.ensureDb();
-    const result: GetChannelResponse[] = [];
-    let registry = await this.db.getRegistry(url);
-    if (!registry) {
-      registry = await this.db.getRegistry(null, url);
-    }
-    if (registry) {
-      const listResponse = await this.getChannelsFromRegistry(registry);
-      if (listResponse && listResponse.channels) {
-        for (const cs of listResponse.channels) {
-          result.push(cs);
-        }
+  async shareChannel(providerUrl: string, identity: SignedAddressIdentity, details: ChannelShareDetails): Promise<ChannelShareResponse> {
+    const provider = await this.getProvider(providerUrl);
+    const shareRequest: ChannelServiceRequest<SignedAddressIdentity, ChannelShareDetails> = {
+      type: 'share',
+      identity: identity,
+      details: details
+    };
+    return await Rest.post<ChannelShareResponse>(provider.serviceEndpoints.restServiceUrl, shareRequest);
+  }
+
+  async getInviteInfo(inviteCode: string): Promise<ChannelShareCodeResponse> {
+    const headers = { "Content-Type": "application/json" };
+    return await Rest.get<ChannelShareCodeResponse>(inviteCode, headers);
+  }
+
+  async acceptInvitation(inviteCode: string, identity: SignedKeyIdentity, memberContract?: MemberContractDetails): Promise<ChannelAcceptResponse> {
+    const inviteInfo = await this.getInviteInfo(inviteCode);
+    const provider = await this.getProvider(inviteInfo.serviceEndpoints.descriptionUrl);
+    const mc = memberContract || { subscribe: false };
+    const details: ChannelAcceptDetails = {
+      invitationId: inviteInfo.invitationId,
+      memberContract: mc
+    };
+    const request: ChannelServiceRequest<SignedKeyIdentity, ChannelAcceptDetails> = {
+      identity: identity,
+      type: 'accept',
+      details: details
+    };
+    return await Rest.post<ChannelAcceptResponse>(provider.serviceEndpoints.restServiceUrl, request);
+  }
+
+  async getChannelsWithProvider(providerUrl: string, identity: SignedAddressIdentity): Promise<ChannelInformation[]> {
+    const provider = await this.getProvider(providerUrl);
+    const listResponse = await this.getChannelsFromProvider(provider, identity);
+    const result: ChannelInformation[] = [];
+    if (listResponse && listResponse.channels) {
+      for (const cs of listResponse.channels) {
+        result.push(cs);
       }
     }
     return result;
   }
 
-  async listAllChannels(): Promise<GetChannelResponse[]> {
-    await this.ensureDb();
-    const registries = await this.db.getAllRegistries();
-    const result: GetChannelResponse[] = [];
-    for (const registry of registries) {
-      const listResponse = await this.getChannelsFromRegistry(registry);
+  async listAllChannels(identity: SignedAddressIdentity): Promise<ChannelInformation[]> {
+    const providers = await this.db.getAllProviders();
+    const result: ChannelInformation[] = [];
+    for (const provider of providers) {
+      const listResponse = await this.getChannelsFromProvider(provider, identity);
       if (listResponse && listResponse.channels) {
         for (const cs of listResponse.channels) {
           result.push(cs);
@@ -317,59 +295,55 @@ class ChannelsClient {
     return result;
   }
 
-  private async getChannelsFromRegistry(registry: RegistrationResponse): Promise<ChannelListResponse> {
-    const headers = { Authorization: Utils.createAuth(registry) };
-    return await Rest.get<ChannelListResponse>(registry.services.channelListUrl, headers);
+  private async getChannelsFromProvider(provider: ChannelServiceDescription, identity: SignedAddressIdentity): Promise<ChannelsListResponse> {
+    const request: ChannelServiceRequest<SignedAddressIdentity, ChannelsListDetails> = {
+      type: 'list',
+      identity: identity,
+      details: {}
+    };
+    return await Rest.post<ChannelsListResponse>(provider.serviceEndpoints.restServiceUrl, request);
   }
 
-  async getChannel(registryUrl: string, channelUrl: string): Promise<GetChannelResponse> {
-    await this.ensureDb();
-    const registry = await this.db.getRegistry(registryUrl);
-    if (!registry) {
-      throw new Error("Failed to fetch channel: Provider is not registered");
-    }
-    const headers = { Authorization: Utils.createAuth(registry) };
-    return await Rest.get<GetChannelResponse>(channelUrl, headers);
+  async getChannel(providerUrl: string, identity: SignedAddressIdentity, channelAddress: string): Promise<ChannelGetResponse> {
+    const provider = await this.getProvider(providerUrl);
+    const details: ChannelGetDetails = {
+      channel: channelAddress
+    };
+    const request: ChannelServiceRequest<SignedAddressIdentity, ChannelGetDetails> = {
+      type: 'get',
+      identity: identity,
+      details: details
+    };
+    return await Rest.post<ChannelGetResponse>(provider.serviceEndpoints.restServiceUrl, request);
   }
 
-  async deleteChannel(registryUrl: string, channelDeleteUrl: string): Promise<ChannelDeleteResponseDetails> {
-    await this.ensureDb();
-    const registry = await this.db.getRegistry(registryUrl);
-    if (!registry) {
-      throw new Error("Failed to delete channel: Provider is not registered");
-    }
-    const headers = { Authorization: Utils.createAuth(registry) };
-    return await Rest.delete<ChannelDeleteResponseDetails>(channelDeleteUrl, headers);
+  async deleteChannel(providerUrl: string, identity: SignedAddressIdentity, channelAddress: string): Promise<ChannelDeleteResponse> {
+    const provider = await this.getProvider(providerUrl);
+    const details: ChannelDeleteDetails = {
+      channel: channelAddress
+    };
+    const request: ChannelServiceRequest<SignedAddressIdentity, ChannelDeleteDetails> = {
+      type: 'delete',
+      identity: identity,
+      details: details
+    };
+    return await Rest.post<ChannelDeleteResponse>(provider.serviceEndpoints.restServiceUrl, request);
   }
 
-  async connectTransport(registryUrl: string, channelId: string, url: string): Promise<void> {
-    await this.ensureDb();
-    const registry = await this.db.getRegistry(registryUrl);
-    if (!registry) {
-      throw new Error("Failed to connect: Provider is not registered");
-    }
-    const fullUrl = new URL(url);
-    let query = fullUrl.search || "";
-    if (!query) {
-      query = "?";
-    } else if (query.length > 1) {
-      query = query + "&";
-    }
-    query += "id=" + encodeURIComponent(registry.id);
-    query += "&token=" + encodeURIComponent(registry.token);
-    fullUrl.search = query;
-    await this.transport.connect(channelId, fullUrl.toString());
+  async connectTransport(providerUrl: string, channelAddress: string, transportUrl: string): Promise<void> {
+    await this.getProvider(providerUrl);
+    await this.transport.connect(channelAddress, transportUrl);
   }
 
-  async joinChannel(request: JoinRequestDetails): Promise<JoinResponseDetails> {
+  joinChannel(request: JoinRequestDetails): Promise<JoinResponseDetails> {
     return new Promise<JoinResponseDetails>((resolve, reject) => {
-      this.transport.sendControlMessageByChannel(request.channelId, 'join', request, (message, err) => {
+      this.transport.sendControlMessageByChannel(request.channelAddress, "join", request, (message, err) => {
         if (err) {
           reject(err);
         } else {
           const controlMessage = message.controlMessagePayload.jsonMessage;
           const joinResponse = controlMessage.details as JoinResponseDetails;
-          this.joinedChannels[request.channelId] = joinResponse;
+          this.joinedChannels[request.channelAddress] = joinResponse;
           this.joinedChannelsByCode[joinResponse.channelCode] = joinResponse;
           resolve(joinResponse);
         }
@@ -379,7 +353,7 @@ class ChannelsClient {
 
   async leaveChannel(request: LeaveRequestDetails): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      this.transport.sendControlMessageByChannel(request.channelId, 'leave', request, (message, err) => {
+      this.transport.sendControlMessageByChannel(request.channelAddress, 'leave', request, (message, err) => {
         if (err) {
           reject(err);
         } else {
@@ -391,7 +365,7 @@ class ChannelsClient {
 
   async getHistory(request: HistoryRequestDetails): Promise<HistoryResponseDetails> {
     return new Promise<HistoryResponseDetails>((resolve, reject) => {
-      const channelId = request.channelId;
+      const channelId = request.channelAddress;
       const joinInfo = this.joinedChannels[channelId];
       if (!joinInfo) {
         reject(new Error("Trying to fetch history of an unjoined channel"));
