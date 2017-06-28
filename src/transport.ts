@@ -1,5 +1,4 @@
-import { HistoryMessageDetails, ChannelMessage, MessageToSerialize } from "./interfaces";
-import { ChannelMessageUtils } from './utils';
+import { HistoryMessageDetails, ChannelMessage, MessageToSerialize, ChannelMessageUtils } from 'channels-common';
 
 export type SocketConnectCallback = (err?: any) => void;
 export type MessageCallback = (message: ChannelMessage, err?: Error) => void;

@@ -22,6 +22,7 @@
     "webpack": "^3.0.0"
   },
   "dependencies": {
+    "channels-common": "git+ssh://git@github.com/ChannelElementsTeam/channels-common.git",
     "text-encoding-utf-8": "^1.0.1"
   }
 }
