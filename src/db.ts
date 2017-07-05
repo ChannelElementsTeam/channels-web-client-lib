@@ -8,6 +8,12 @@ const STORE_PROVIDER_INFO = "providers";
 const MODE_READWRITE = "readwrite";
 const MODE_READ = "readonly";
 
+export interface ProviderInfo {
+  id?: number;
+  providerUrl: string;
+  details: ChannelServiceDescription;
+}
+
 export class ClientDb {
 
   private db: IDBDatabase;
@@ -30,7 +36,8 @@ export class ClientDb {
       request.onupgradeneeded = (event) => {
         const db = (event.target as any).result as IDBDatabase;
         if (!db.objectStoreNames.contains(STORE_PROVIDER_INFO)) {
-          db.createObjectStore(STORE_PROVIDER_INFO, { keyPath: "providerUrl" });
+          const store = db.createObjectStore(STORE_PROVIDER_INFO, { keyPath: 'id', autoIncrement: true });
+          store.createIndex('providerUrl', 'providerUrl', { unique: true });
         }
       };
     });
@@ -61,29 +68,40 @@ export class ClientDb {
     });
   }
 
-  getProvider(url: string): Promise<ChannelServiceDescription> {
-    return new Promise<ChannelServiceDescription>((resolve, reject) => {
+  getProviderByUrl(url: string): Promise<ProviderInfo> {
+    return new Promise<ProviderInfo>((resolve, reject) => {
       const store = this.getStore(STORE_PROVIDER_INFO, MODE_READ);
-      const request = store.get(url);
+      const index = store.index('providerUrl');
+      const request = index.get(url);
       request.onerror = (event) => {
         console.error("Failed to load registry from DB: ", event);
         reject(new Error("Failed to load registry: " + event));
       };
       request.onsuccess = (event) => {
-        let response: ChannelServiceDescription = null;
-        if (request.result) {
-          response = request.result.details as ChannelServiceDescription;
-        }
-        resolve(response);
+        resolve(request.result as ProviderInfo);
       };
     });
   }
 
-  getAllProviders(): Promise<ChannelServiceDescription[]> {
-    return new Promise<ChannelServiceDescription[]>((resolve, reject) => {
+  getProviderById(id: number): Promise<ProviderInfo> {
+    return new Promise<ProviderInfo>((resolve, reject) => {
+      const store = this.getStore(STORE_PROVIDER_INFO, MODE_READ);
+      const request = store.get(id);
+      request.onerror = (event) => {
+        console.error("Failed to load registry from DB: ", event);
+        reject(new Error("Failed to load registry: " + event));
+      };
+      request.onsuccess = (event) => {
+        resolve(request.result);
+      };
+    });
+  }
+
+  getAllProviders(): Promise<ProviderInfo[]> {
+    return new Promise<ProviderInfo[]>((resolve, reject) => {
       const store = this.getStore(STORE_PROVIDER_INFO, MODE_READ);
       const request = store.openCursor();
-      const result: ChannelServiceDescription[] = [];
+      const result: ProviderInfo[] = [];
       request.onerror = (event) => {
         console.error("Failed to open registry cursor: ", event);
         reject(new Error("Failed to open registry cursor: " + event));
@@ -91,7 +109,7 @@ export class ClientDb {
       request.onsuccess = (event) => {
         const cursor = (event.target as any).result as IDBCursor;
         if (cursor) {
-          result.push((cursor as any).value.details as ChannelServiceDescription);
+          result.push((cursor as any).value);
           cursor.continue();
         } else {
           resolve(result);

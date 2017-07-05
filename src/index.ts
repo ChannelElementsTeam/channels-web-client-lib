@@ -6,13 +6,17 @@ import {
   ChannelServiceRequest, SignedAddressIdentity, ChannelShareDetails, ChannelShareResponse, ChannelShareCodeResponse, MemberContractDetails, ChannelDeleteResponse,
   JoinResponseDetails, ChannelMessage, JoinNotificationDetails, LeaveNotificationDetails, ChannelAcceptResponse, ChannelAcceptDetails, ChannelDeleteDetails,
   MessageToSerialize, HistoryResponseDetails, LeaveRequestDetails, ChannelsListDetails, ChannelsListResponse, ChannelGetResponse, ChannelGetDetails,
-  HistoryRequestDetails, JoinRequestDetails
+  HistoryRequestDetails, JoinRequestDetails, ChannelIdentityUtils
 } from 'channels-common';
 
 export * from 'channels-common';
 
 export type ParticipantListener = (joined: JoinNotificationDetails, left: LeaveNotificationDetails) => void;
 export type ChannelDeletedListener = (details: ChannelDeletedNotificationDetails) => void;
+
+export interface ProviderChannelInformation extends ChannelInformation {
+  providerId: any;
+}
 
 class ChannelsClient {
   private db: ClientDb;
@@ -212,9 +216,9 @@ class ChannelsClient {
 
   async getProvider(serverUrl: string): Promise<ChannelServiceDescription> {
     await this.ensureDb();
-    const cached = await this.db.getProvider(serverUrl);
+    const cached = await this.db.getProviderByUrl(serverUrl);
     if (cached) {
-      return cached;
+      return cached.details;
     }
     const providerInfo = await Rest.get<ChannelServiceDescription>(serverUrl);
     if (providerInfo && providerInfo.serviceEndpoints) {
@@ -223,6 +227,11 @@ class ChannelsClient {
     }
     console.error("Failed to fetch provider info - invalid response", providerInfo);
     throw new Error("Failed to fetch provider info - invalid response");
+  }
+
+  async getProviderById(id: number): Promise<ChannelServiceDescription> {
+    await this.ensureDb();
+    return (await this.db.getProviderById(id)).details;
   }
 
   async createChannel(providerUrl: string, identity: SignedKeyIdentity, details: ChannelCreateDetails): Promise<ChannelCreateResponse> {
@@ -235,8 +244,11 @@ class ChannelsClient {
     return await Rest.post<ChannelCreateResponse>(provider.serviceEndpoints.restServiceUrl, request);
   }
 
-  async shareChannel(providerUrl: string, identity: SignedAddressIdentity, details: ChannelShareDetails): Promise<ChannelShareResponse> {
-    const provider = await this.getProvider(providerUrl);
+  async shareChannel(providerId: number, identity: SignedAddressIdentity, details: ChannelShareDetails): Promise<ChannelShareResponse> {
+    const provider = await this.getProviderById(providerId);
+    if (!provider) {
+      throw new Error("No provider registered with id: " + providerId);
+    }
     const shareRequest: ChannelServiceRequest<SignedAddressIdentity, ChannelShareDetails> = {
       type: 'share',
       identity: identity,
@@ -266,26 +278,34 @@ class ChannelsClient {
     return await Rest.post<ChannelAcceptResponse>(provider.serviceEndpoints.restServiceUrl, request);
   }
 
-  async getChannelsWithProvider(providerUrl: string, identity: SignedAddressIdentity): Promise<ChannelInformation[]> {
-    const provider = await this.getProvider(providerUrl);
+  async getChannelsWithProvider(providerId: number, identity: SignedAddressIdentity): Promise<ProviderChannelInformation[]> {
+    const result: ProviderChannelInformation[] = [];
+    const provider = await this.getProviderById(providerId);
+    if (!provider) {
+      return result;
+    }
     const listResponse = await this.getChannelsFromProvider(provider, identity);
-    const result: ChannelInformation[] = [];
     if (listResponse && listResponse.channels) {
       for (const cs of listResponse.channels) {
-        result.push(cs);
+        const pci = (cs as ProviderChannelInformation);
+        pci.providerId = providerId;
+        result.push(pci);
       }
     }
     return result;
   }
 
-  async listAllChannels(identity: SignedAddressIdentity): Promise<ChannelInformation[]> {
+  async listAllChannels(identity: SignedAddressIdentity): Promise<ProviderChannelInformation[]> {
+    await this.ensureDb();
     const providers = await this.db.getAllProviders();
-    const result: ChannelInformation[] = [];
+    const result: ProviderChannelInformation[] = [];
     for (const provider of providers) {
-      const listResponse = await this.getChannelsFromProvider(provider, identity);
+      const listResponse = await this.getChannelsFromProvider(provider.details, identity);
       if (listResponse && listResponse.channels) {
         for (const cs of listResponse.channels) {
-          result.push(cs);
+          const pci = (cs as ProviderChannelInformation);
+          pci.providerId = provider.id;
+          result.push(pci);
         }
       }
     }
@@ -304,8 +324,8 @@ class ChannelsClient {
     return await Rest.post<ChannelsListResponse>(provider.serviceEndpoints.restServiceUrl, request);
   }
 
-  async getChannel(providerUrl: string, identity: SignedAddressIdentity, channelAddress: string): Promise<ChannelGetResponse> {
-    const provider = await this.getProvider(providerUrl);
+  async getChannel(providerId: number, identity: SignedAddressIdentity, channelAddress: string): Promise<ChannelGetResponse> {
+    const provider = await this.getProviderById(providerId);
     const details: ChannelGetDetails = {
       channel: channelAddress
     };
@@ -317,8 +337,8 @@ class ChannelsClient {
     return await Rest.post<ChannelGetResponse>(provider.serviceEndpoints.restServiceUrl, request);
   }
 
-  async deleteChannel(providerUrl: string, identity: SignedAddressIdentity, channelAddress: string): Promise<ChannelDeleteResponse> {
-    const provider = await this.getProvider(providerUrl);
+  async deleteChannel(providerId: number, identity: SignedAddressIdentity, channelAddress: string): Promise<ChannelDeleteResponse> {
+    const provider = await this.getProviderById(providerId);
     const details: ChannelDeleteDetails = {
       channel: channelAddress
     };
@@ -330,8 +350,11 @@ class ChannelsClient {
     return await Rest.post<ChannelDeleteResponse>(provider.serviceEndpoints.restServiceUrl, request);
   }
 
-  async connectTransport(providerUrl: string, channelAddress: string, transportUrl: string): Promise<void> {
-    await this.getProvider(providerUrl);
+  async connectTransport(providerId: number, channelAddress: string, transportUrl: string): Promise<void> {
+    const provider = await this.getProviderById(providerId);
+    if (!provider) {
+      throw new Error("No provider registered with id: " + providerId);
+    }
     await this.transport.connect(channelAddress, transportUrl);
   }
 
@@ -383,13 +406,13 @@ class ChannelsClient {
     });
   };
 
-  encode(data: any): Uint8Array {
+  static encode(data: any): Uint8Array {
     const text = (typeof data === "string") ? data : JSON.stringify(data);
     const payload = new TextEncoder().encode(text);
     return payload;
   }
 
-  decode(binary: Uint8Array, json?: boolean): string {
+  static decode(binary: Uint8Array, json?: boolean): string {
     return new TextDecoder('utf-8').decode(binary);
   }
 
@@ -406,3 +429,4 @@ class ChannelsClient {
 }
 
 (window as any).ChannelsClient = ChannelsClient;
+(window as any).ChannelIdentityUtils = ChannelIdentityUtils;
