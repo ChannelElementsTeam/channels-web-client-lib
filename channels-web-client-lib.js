@@ -18095,7 +18095,7 @@ exports.Rest = Rest;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var DB_NAME = 'channels-db';
-var DB_VERSION = 1;
+var DB_VERSION = 2;
 var STORE_PROVIDER_INFO = "providers";
 var MODE_READWRITE = "readwrite";
 var MODE_READ = "readonly";

@@ -1,7 +1,7 @@
 import { ChannelServiceDescription } from "channels-common";
 
 const DB_NAME = 'channels-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 const STORE_PROVIDER_INFO = "providers";
 
