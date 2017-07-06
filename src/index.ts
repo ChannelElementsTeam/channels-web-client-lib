@@ -33,15 +33,12 @@ class ChannelsClient {
     this.transport = new TransportManager();
 
     this.transport.historyMessageHandler = (details, message) => {
-      const joinInfo = this.joinedChannelsByCode[message.channelCode];
-      if (joinInfo) {
-        const cbList = this.historyCallbacks[joinInfo.channelAddress];
-        if (cbList) {
-          for (const cb of cbList) {
-            try {
-              cb(details, message);
-            } catch (er) { /* noop */ }
-          }
+      const cbList = this.historyCallbacks[details.channelAddress];
+      if (cbList) {
+        for (const cb of cbList) {
+          try {
+            cb(details, message);
+          } catch (er) { /* noop */ }
         }
       }
     };

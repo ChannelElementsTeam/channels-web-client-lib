@@ -17345,17 +17345,14 @@ var ChannelsClient = (function () {
         this.db = new db_1.ClientDb();
         this.transport = new transport_1.TransportManager();
         this.transport.historyMessageHandler = function (details, message) {
-            var joinInfo = _this.joinedChannelsByCode[message.channelCode];
-            if (joinInfo) {
-                var cbList = _this.historyCallbacks[joinInfo.channelAddress];
-                if (cbList) {
-                    for (var _i = 0, cbList_1 = cbList; _i < cbList_1.length; _i++) {
-                        var cb = cbList_1[_i];
-                        try {
-                            cb(details, message);
-                        }
-                        catch (er) { }
+            var cbList = _this.historyCallbacks[details.channelAddress];
+            if (cbList) {
+                for (var _i = 0, cbList_1 = cbList; _i < cbList_1.length; _i++) {
+                    var cb = cbList_1[_i];
+                    try {
+                        cb(details, message);
                     }
+                    catch (er) { }
                 }
             }
         };
