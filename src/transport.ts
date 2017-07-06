@@ -3,16 +3,29 @@ import { HistoryMessageDetails, ChannelMessage, MessageToSerialize, ChannelMessa
 export type SocketConnectCallback = (err?: any) => void;
 export type MessageCallback = (message: ChannelMessage, err?: Error) => void;
 export type HistoryMessageCallback = (details: HistoryMessageDetails, message: ChannelMessage) => void;
+export interface SocketConnectionListener {
+  onSocketClosed(channels: string[]): void;
+  onSocketConnected(channels: string[]): void;
+}
+
+enum SocketState {
+  Connecting,
+  Connected,
+  Offline
+}
 
 interface SocketInfo {
   url: string;
-  connected: boolean;
-  connecting: boolean;
+  state: SocketState;
+  connectedOnce: boolean;
   pendingCallbacks: SocketConnectCallback[];
   socket?: WebSocket;
+  lastContact: number;
+  pingInterval: number;
 }
 
 export class TransportManager {
+  private polling = false;
   private counters: { [id: string]: number } = {};
   private sockets: { [url: string]: SocketInfo } = {};
   private socketsById: { [id: string]: SocketInfo } = {};
@@ -20,38 +33,48 @@ export class TransportManager {
   historyMessageHandler: HistoryMessageCallback;
   channelMessageHandler: MessageCallback;
   controlMessageHandler: MessageCallback;
+  channelSocketListener: SocketConnectionListener;
 
-  connect(channelId: string, url: string): Promise<void> {
+  connect(url: string, channelId?: string): Promise<void> {
+    this.ensureSocketPolling();
     return new Promise<void>((resolve, reject) => {
       let info = this.sockets[url];
       if (info) {
-        this.socketsById[channelId] = info;
-        if (info.connected) {
-          resolve();
-          return;
+        if (channelId) {
+          this.socketsById[channelId] = info;
         }
-        if (info.connecting) {
-          info.pendingCallbacks.push((err) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve();
-            }
-          });
-          return;
+        switch (info.state) {
+          case SocketState.Connected:
+            resolve();
+            return;
+          case SocketState.Connecting:
+            info.pendingCallbacks.push((err) => {
+              if (err) {
+                reject(err);
+              } else {
+                resolve();
+              }
+            });
+            return;
+          default:
+            break;
         }
       }
       if (!info) {
         info = {
           url: url,
-          connected: false,
-          connecting: true,
-          pendingCallbacks: []
+          connectedOnce: false,
+          state: SocketState.Connecting,
+          pendingCallbacks: [],
+          lastContact: 0,
+          pingInterval: 0
         };
         this.sockets[url] = info;
-        this.socketsById[channelId] = info;
+        if (channelId) {
+          this.socketsById[channelId] = info;
+        }
       } else {
-        info.connecting = true;
+        info.state = SocketState.Connecting;
         info.pendingCallbacks = [];
       }
       info.pendingCallbacks.push((err) => {
@@ -66,15 +89,16 @@ export class TransportManager {
   }
 
   private connectSocket(info: SocketInfo) {
-    info.connecting = true;
+    info.lastContact = 0;
+    info.pingInterval = 0;
+    info.state = SocketState.Connecting;
     try {
       const socket = new WebSocket(info.url);
       socket.binaryType = "arraybuffer";
       info.socket = socket;
       socket.onopen = (event) => {
         if (socket.readyState === WebSocket.OPEN) {
-          info.connecting = false;
-          info.connected = true;
+          info.state = SocketState.Connected;
           try {
             for (const cb of info.pendingCallbacks) {
               cb();
@@ -82,6 +106,22 @@ export class TransportManager {
           } catch (err) {
             // noop
           }
+          if (info.connectedOnce && this.channelSocketListener) {
+            const channels: string[] = [];
+            for (const ch in this.socketsById) {
+              if (this.socketsById.hasOwnProperty(ch)) {
+                const si = this.socketsById[ch];
+                if (si.url === info.url) {
+                  channels.push(ch);
+                }
+              }
+            }
+            try {
+              this.channelSocketListener.onSocketConnected(channels);
+            } catch (_) { /*noop*/ }
+          }
+          info.connectedOnce = true;
+          console.log("Socket connectd to ", info.url);
         }
       };
       socket.onerror = (error) => {
@@ -92,16 +132,28 @@ export class TransportManager {
         } catch (err) {
           // noop
         } finally {
-          info.connected = false;
-          info.connecting = false;
+          info.state = SocketState.Offline;
           info.pendingCallbacks = [];
         }
         console.error("Socket error: ", error);
       };
       socket.onclose = (event) => {
-        info.connected = false;
-        info.connecting = false;
+        info.state = SocketState.Offline;
         console.error("Socket closed: ", event);
+        if (info.connectedOnce && this.channelSocketListener) {
+          const channels: string[] = [];
+          for (const ch in this.socketsById) {
+            if (this.socketsById.hasOwnProperty(ch)) {
+              const si = this.socketsById[ch];
+              if (si.url === info.url) {
+                channels.push(ch);
+              }
+            }
+          }
+          try {
+            this.channelSocketListener.onSocketClosed(channels);
+          } catch (_) { /*noop*/ }
+        }
       };
       socket.onmessage = (event) => {
         this.onMessageReceived(info, event);
@@ -115,8 +167,7 @@ export class TransportManager {
       } catch (err) {
         // noop
       } finally {
-        info.connected = false;
-        info.connecting = false;
+        info.state = SocketState.Offline;
         info.pendingCallbacks = [];
       }
     }
@@ -137,6 +188,8 @@ export class TransportManager {
   }
 
   private handleMessage(info: SocketInfo, message: ChannelMessage) {
+    info.lastContact = (new Date()).getTime();
+
     // handle control message
     if (message.channelCode === 0 && message.controlMessagePayload) {
       const controlMessage = message.controlMessagePayload.jsonMessage;
@@ -157,6 +210,7 @@ export class TransportManager {
         // This library will try to handle the message or fire the appropriate events
         switch (controlMessage.type) {
           case 'ping':
+            info.pingInterval = controlMessage.details.interval || 0;
             this.sendControlMessage(info.url, 'ping-reply', {}, controlMessage.requestId);
             break;
           case 'history-message': {
@@ -214,7 +268,7 @@ export class TransportManager {
   }
 
   private sendControl(messageId: string, info: SocketInfo, type: string, details: any, callback?: MessageCallback) {
-    if (info && info.connected) {
+    if (info && info.state === SocketState.Connected) {
       if (callback) {
         this.controlCallbacks[messageId] = callback;
       }
@@ -227,11 +281,59 @@ export class TransportManager {
 
   send(channelId: string, message: MessageToSerialize) {
     const info = this.socketsById[channelId];
-    if (info && info.connected) {
+    if (info && info.state === SocketState.Connected) {
       const bytes = ChannelMessageUtils.serializeChannelMessage(message, 0, 0);
       info.socket.send(bytes.buffer);
     } else {
       throw new Error("Socket not connected to this channel");
     }
+  }
+
+  private ensureSocketPolling() {
+    if (!this.polling) {
+      this.polling = true;
+      this.socketPoll();
+    }
+  }
+
+  private socketPoll() {
+    setTimeout(() => {
+      try {
+        for (const url in this.sockets) {
+          if (this.sockets.hasOwnProperty(url)) {
+            const info = this.sockets[url];
+            if (info.connectedOnce) {
+              switch (info.state) {
+                case SocketState.Offline:
+                  try {
+                    this.reconnectSocket(info);
+                  } catch (_) {
+                    // noop
+                  }
+                  break;
+                case SocketState.Connected:
+                  if (info.pingInterval > 0) {
+                    const now = (new Date()).getTime();
+                    if ((now - info.lastContact) > (2 * info.pingInterval)) {
+                      console.warn("Socket with " + url + " has not been contacted for 2 * pingInterval. Disconnecting and will try to reconnect.");
+                      info.socket.close();
+                    }
+                  }
+                  break;
+                default:
+                  break;
+              }
+            }
+          }
+        }
+      } finally {
+        this.socketPoll();
+      }
+    }, 6000);
+  }
+
+  private reconnectSocket(info: SocketInfo) {
+    console.log("Reconnecting socket: " + info.url);
+    this.connect(info.url);
   }
 }

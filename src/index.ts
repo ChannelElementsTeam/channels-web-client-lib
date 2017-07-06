@@ -1,6 +1,6 @@
 import { Rest } from './rest';
-import { ClientDb } from './db';
-import { TransportManager, MessageCallback, HistoryMessageCallback } from './transport';
+import { ClientDb, ProviderInfo } from './db';
+import { TransportManager, MessageCallback, HistoryMessageCallback, SocketConnectionListener } from './transport';
 import {
   ChannelDeletedNotificationDetails, ChannelServiceDescription, ChannelCreateDetails, ChannelCreateResponse, SignedKeyIdentity, ChannelInformation,
   ChannelServiceRequest, SignedAddressIdentity, ChannelShareDetails, ChannelShareResponse, ChannelShareCodeResponse, MemberContractDetails, ChannelDeleteResponse,
@@ -13,12 +13,19 @@ export * from 'channels-common';
 
 export type ParticipantListener = (joined: JoinNotificationDetails, left: LeaveNotificationDetails) => void;
 export type ChannelDeletedListener = (details: ChannelDeletedNotificationDetails) => void;
+export type ChannelSocketListener = (connected: boolean) => void;
 
 export interface ProviderChannelInformation extends ChannelInformation {
   providerId: any;
 }
 
-class ChannelsClient {
+export interface AccptInvitationResponse {
+  shareCode: ChannelShareCodeResponse;
+  channel: ChannelAcceptResponse;
+  provider: ProviderInfo;
+}
+
+class ChannelsClient implements SocketConnectionListener {
   private db: ClientDb;
   private transport: TransportManager;
   private joinedChannels: { [channelAddress: string]: JoinResponseDetails } = {};
@@ -27,6 +34,7 @@ class ChannelsClient {
   private channelMessageCallbacks: { [channelAddress: string]: MessageCallback[] } = {};
   private channelParticipantListeners: { [channelAddress: string]: ParticipantListener[] } = {};
   private channelDeletedListeners: ChannelDeletedListener[] = [];
+  private channelSocketListeners: { [channelAddress: string]: ChannelSocketListener[] } = {};
 
   constructor() {
     this.db = new ClientDb();
@@ -64,6 +72,38 @@ class ChannelsClient {
         this.handleControlMessage(message);
       }
     };
+
+    this.transport.channelSocketListener = this;
+  }
+
+  onSocketClosed(channels: string[]): void {
+    if (channels && channels.length) {
+      for (const ch of channels) {
+        const list = this.channelSocketListeners[ch];
+        if (list) {
+          for (const cb of list) {
+            try {
+              cb(false);
+            } catch (_) { /*noop*/ }
+          }
+        }
+      }
+    }
+  }
+
+  onSocketConnected(channels: string[]): void {
+    if (channels && channels.length) {
+      for (const ch of channels) {
+        const list = this.channelSocketListeners[ch];
+        if (list) {
+          for (const cb of list) {
+            try {
+              cb(true);
+            } catch (_) { /*noop*/ }
+          }
+        }
+      }
+    }
   }
 
   private handleControlMessage(message: ChannelMessage) {
@@ -131,6 +171,12 @@ class ChannelsClient {
         }
         this.historyCallbacks[channelId].push(listener);
         break;
+      case 'socket':
+        if (!this.channelSocketListeners[channelId]) {
+          this.channelSocketListeners[channelId] = [];
+        }
+        this.channelSocketListeners[channelId].push(listener);
+        break;
       default:
         break;
     }
@@ -164,6 +210,23 @@ class ChannelsClient {
           if (index >= 0) {
             list.splice(index, 1);
             this.channelParticipantListeners[channelId] = list;
+          }
+        }
+        break;
+      }
+      case 'socket': {
+        const list = this.channelSocketListeners[channelId];
+        if (list) {
+          let index = -1;
+          for (let i = 0; i < list.length; i++) {
+            if (listener === list[i]) {
+              index = i;
+              break;
+            }
+          }
+          if (index >= 0) {
+            list.splice(index, 1);
+            this.channelSocketListeners[channelId] = list;
           }
         }
         break;
@@ -231,6 +294,11 @@ class ChannelsClient {
     return (await this.db.getProviderById(id)).details;
   }
 
+  async getProviderInfo(url: string): Promise<ProviderInfo> {
+    await this.ensureDb();
+    return await this.db.getProviderByUrl(url);
+  }
+
   async createChannel(providerUrl: string, identity: SignedKeyIdentity, details: ChannelCreateDetails): Promise<ChannelCreateResponse> {
     const provider = await this.getProvider(providerUrl);
     const request: ChannelServiceRequest<SignedKeyIdentity, ChannelCreateDetails> = {
@@ -259,7 +327,7 @@ class ChannelsClient {
     return await Rest.get<ChannelShareCodeResponse>(inviteCode, headers);
   }
 
-  async acceptInvitation(inviteCode: string, identity: SignedKeyIdentity, memberContract?: MemberContractDetails): Promise<ChannelAcceptResponse> {
+  async acceptInvitation(inviteCode: string, identity: SignedKeyIdentity, memberContract?: MemberContractDetails): Promise<AccptInvitationResponse> {
     const inviteInfo = await this.getInviteInfo(inviteCode);
     const provider = await this.getProvider(inviteInfo.serviceEndpoints.descriptionUrl);
     const mc = memberContract || { subscribe: false };
@@ -272,7 +340,12 @@ class ChannelsClient {
       type: 'accept',
       details: details
     };
-    return await Rest.post<ChannelAcceptResponse>(provider.serviceEndpoints.restServiceUrl, request);
+    const channelInfo = await Rest.post<ChannelAcceptResponse>(provider.serviceEndpoints.restServiceUrl, request);
+    return {
+      channel: channelInfo,
+      shareCode: inviteInfo,
+      provider: await this.getProviderInfo(inviteInfo.serviceEndpoints.descriptionUrl)
+    };
   }
 
   async getChannelsWithProvider(providerId: number, identity: SignedAddressIdentity): Promise<ProviderChannelInformation[]> {
@@ -352,7 +425,7 @@ class ChannelsClient {
     if (!provider) {
       throw new Error("No provider registered with id: " + providerId);
     }
-    await this.transport.connect(channelAddress, transportUrl);
+    await this.transport.connect(transportUrl, channelAddress);
   }
 
   joinChannel(request: JoinRequestDetails): Promise<JoinResponseDetails> {

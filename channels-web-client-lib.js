@@ -17342,6 +17342,7 @@ var ChannelsClient = (function () {
         this.channelMessageCallbacks = {};
         this.channelParticipantListeners = {};
         this.channelDeletedListeners = [];
+        this.channelSocketListeners = {};
         this.db = new db_1.ClientDb();
         this.transport = new transport_1.TransportManager();
         this.transport.historyMessageHandler = function (details, message) {
@@ -17378,7 +17379,42 @@ var ChannelsClient = (function () {
                 _this.handleControlMessage(message);
             }
         };
+        this.transport.channelSocketListener = this;
     }
+    ChannelsClient.prototype.onSocketClosed = function (channels) {
+        if (channels && channels.length) {
+            for (var _i = 0, channels_1 = channels; _i < channels_1.length; _i++) {
+                var ch = channels_1[_i];
+                var list = this.channelSocketListeners[ch];
+                if (list) {
+                    for (var _a = 0, list_1 = list; _a < list_1.length; _a++) {
+                        var cb = list_1[_a];
+                        try {
+                            cb(false);
+                        }
+                        catch (_) { }
+                    }
+                }
+            }
+        }
+    };
+    ChannelsClient.prototype.onSocketConnected = function (channels) {
+        if (channels && channels.length) {
+            for (var _i = 0, channels_2 = channels; _i < channels_2.length; _i++) {
+                var ch = channels_2[_i];
+                var list = this.channelSocketListeners[ch];
+                if (list) {
+                    for (var _a = 0, list_2 = list; _a < list_2.length; _a++) {
+                        var cb = list_2[_a];
+                        try {
+                            cb(true);
+                        }
+                        catch (_) { }
+                    }
+                }
+            }
+        }
+    };
     ChannelsClient.prototype.handleControlMessage = function (message) {
         var controlMessage = message.controlMessagePayload.jsonMessage;
         switch (controlMessage.type) {
@@ -17449,6 +17485,12 @@ var ChannelsClient = (function () {
                 }
                 this.historyCallbacks[channelId].push(listener);
                 break;
+            case 'socket':
+                if (!this.channelSocketListeners[channelId]) {
+                    this.channelSocketListeners[channelId] = [];
+                }
+                this.channelSocketListeners[channelId].push(listener);
+                break;
             default:
                 break;
         }
@@ -17481,6 +17523,23 @@ var ChannelsClient = (function () {
                     if (index >= 0) {
                         list.splice(index, 1);
                         this.channelParticipantListeners[channelId] = list;
+                    }
+                }
+                break;
+            }
+            case 'socket': {
+                var list = this.channelSocketListeners[channelId];
+                if (list) {
+                    var index = -1;
+                    for (var i = 0; i < list.length; i++) {
+                        if (listener === list[i]) {
+                            index = i;
+                            break;
+                        }
+                    }
+                    if (index >= 0) {
+                        list.splice(index, 1);
+                        this.channelSocketListeners[channelId] = list;
                     }
                 }
                 break;
@@ -17577,6 +17636,19 @@ var ChannelsClient = (function () {
             });
         });
     };
+    ChannelsClient.prototype.getProviderInfo = function (url) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ensureDb()];
+                    case 1:
+                        _a.sent();
+                        return [4 /*yield*/, this.db.getProviderByUrl(url)];
+                    case 2: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
     ChannelsClient.prototype.createChannel = function (providerUrl, identity, details) {
         return __awaiter(this, void 0, void 0, function () {
             var provider, request;
@@ -17633,15 +17705,15 @@ var ChannelsClient = (function () {
     };
     ChannelsClient.prototype.acceptInvitation = function (inviteCode, identity, memberContract) {
         return __awaiter(this, void 0, void 0, function () {
-            var inviteInfo, provider, mc, details, request;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var inviteInfo, provider, mc, details, request, channelInfo, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0: return [4 /*yield*/, this.getInviteInfo(inviteCode)];
                     case 1:
-                        inviteInfo = _a.sent();
+                        inviteInfo = _b.sent();
                         return [4 /*yield*/, this.getProvider(inviteInfo.serviceEndpoints.descriptionUrl)];
                     case 2:
-                        provider = _a.sent();
+                        provider = _b.sent();
                         mc = memberContract || { subscribe: false };
                         details = {
                             invitationId: inviteInfo.invitationId,
@@ -17653,7 +17725,15 @@ var ChannelsClient = (function () {
                             details: details
                         };
                         return [4 /*yield*/, rest_1.Rest.post(provider.serviceEndpoints.restServiceUrl, request)];
-                    case 3: return [2 /*return*/, _a.sent()];
+                    case 3:
+                        channelInfo = _b.sent();
+                        _a = {
+                            channel: channelInfo,
+                            shareCode: inviteInfo
+                        };
+                        return [4 /*yield*/, this.getProviderInfo(inviteInfo.serviceEndpoints.descriptionUrl)];
+                    case 4: return [2 /*return*/, (_a.provider = _b.sent(),
+                            _a)];
                 }
             });
         });
@@ -17800,7 +17880,7 @@ var ChannelsClient = (function () {
                         if (!provider) {
                             throw new Error("No provider registered with id: " + providerId);
                         }
-                        return [4 /*yield*/, this.transport.connect(channelAddress, transportUrl)];
+                        return [4 /*yield*/, this.transport.connect(transportUrl, channelAddress)];
                     case 2:
                         _a.sent();
                         return [2 /*return*/];
@@ -18216,47 +18296,63 @@ exports.ClientDb = ClientDb;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var channels_common_1 = __webpack_require__(34);
+var SocketState;
+(function (SocketState) {
+    SocketState[SocketState["Connecting"] = 0] = "Connecting";
+    SocketState[SocketState["Connected"] = 1] = "Connected";
+    SocketState[SocketState["Offline"] = 2] = "Offline";
+})(SocketState || (SocketState = {}));
 var TransportManager = (function () {
     function TransportManager() {
+        this.polling = false;
         this.counters = {};
         this.sockets = {};
         this.socketsById = {};
         this.controlCallbacks = {};
     }
-    TransportManager.prototype.connect = function (channelId, url) {
+    TransportManager.prototype.connect = function (url, channelId) {
         var _this = this;
+        this.ensureSocketPolling();
         return new Promise(function (resolve, reject) {
             var info = _this.sockets[url];
             if (info) {
-                _this.socketsById[channelId] = info;
-                if (info.connected) {
-                    resolve();
-                    return;
+                if (channelId) {
+                    _this.socketsById[channelId] = info;
                 }
-                if (info.connecting) {
-                    info.pendingCallbacks.push(function (err) {
-                        if (err) {
-                            reject(err);
-                        }
-                        else {
-                            resolve();
-                        }
-                    });
-                    return;
+                switch (info.state) {
+                    case SocketState.Connected:
+                        resolve();
+                        return;
+                    case SocketState.Connecting:
+                        info.pendingCallbacks.push(function (err) {
+                            if (err) {
+                                reject(err);
+                            }
+                            else {
+                                resolve();
+                            }
+                        });
+                        return;
+                    default:
+                        break;
                 }
             }
             if (!info) {
                 info = {
                     url: url,
-                    connected: false,
-                    connecting: true,
-                    pendingCallbacks: []
+                    connectedOnce: false,
+                    state: SocketState.Connecting,
+                    pendingCallbacks: [],
+                    lastContact: 0,
+                    pingInterval: 0
                 };
                 _this.sockets[url] = info;
-                _this.socketsById[channelId] = info;
+                if (channelId) {
+                    _this.socketsById[channelId] = info;
+                }
             }
             else {
-                info.connecting = true;
+                info.state = SocketState.Connecting;
                 info.pendingCallbacks = [];
             }
             info.pendingCallbacks.push(function (err) {
@@ -18272,15 +18368,16 @@ var TransportManager = (function () {
     };
     TransportManager.prototype.connectSocket = function (info) {
         var _this = this;
-        info.connecting = true;
+        info.lastContact = 0;
+        info.pingInterval = 0;
+        info.state = SocketState.Connecting;
         try {
             var socket_1 = new WebSocket(info.url);
             socket_1.binaryType = "arraybuffer";
             info.socket = socket_1;
             socket_1.onopen = function (event) {
                 if (socket_1.readyState === WebSocket.OPEN) {
-                    info.connecting = false;
-                    info.connected = true;
+                    info.state = SocketState.Connected;
                     try {
                         for (var _i = 0, _a = info.pendingCallbacks; _i < _a.length; _i++) {
                             var cb = _a[_i];
@@ -18290,6 +18387,23 @@ var TransportManager = (function () {
                     catch (err) {
                         // noop
                     }
+                    if (info.connectedOnce && _this.channelSocketListener) {
+                        var channels = [];
+                        for (var ch in _this.socketsById) {
+                            if (_this.socketsById.hasOwnProperty(ch)) {
+                                var si = _this.socketsById[ch];
+                                if (si.url === info.url) {
+                                    channels.push(ch);
+                                }
+                            }
+                        }
+                        try {
+                            _this.channelSocketListener.onSocketConnected(channels);
+                        }
+                        catch (_) { }
+                    }
+                    info.connectedOnce = true;
+                    console.log("Socket connectd to ", info.url);
                 }
             };
             socket_1.onerror = function (error) {
@@ -18303,16 +18417,29 @@ var TransportManager = (function () {
                     // noop
                 }
                 finally {
-                    info.connected = false;
-                    info.connecting = false;
+                    info.state = SocketState.Offline;
                     info.pendingCallbacks = [];
                 }
                 console.error("Socket error: ", error);
             };
             socket_1.onclose = function (event) {
-                info.connected = false;
-                info.connecting = false;
+                info.state = SocketState.Offline;
                 console.error("Socket closed: ", event);
+                if (info.connectedOnce && _this.channelSocketListener) {
+                    var channels = [];
+                    for (var ch in _this.socketsById) {
+                        if (_this.socketsById.hasOwnProperty(ch)) {
+                            var si = _this.socketsById[ch];
+                            if (si.url === info.url) {
+                                channels.push(ch);
+                            }
+                        }
+                    }
+                    try {
+                        _this.channelSocketListener.onSocketClosed(channels);
+                    }
+                    catch (_) { }
+                }
             };
             socket_1.onmessage = function (event) {
                 _this.onMessageReceived(info, event);
@@ -18329,8 +18456,7 @@ var TransportManager = (function () {
                 // noop
             }
             finally {
-                info.connected = false;
-                info.connecting = false;
+                info.state = SocketState.Offline;
                 info.pendingCallbacks = [];
             }
         }
@@ -18350,6 +18476,7 @@ var TransportManager = (function () {
         }
     };
     TransportManager.prototype.handleMessage = function (info, message) {
+        info.lastContact = (new Date()).getTime();
         // handle control message
         if (message.channelCode === 0 && message.controlMessagePayload) {
             var controlMessage = message.controlMessagePayload.jsonMessage;
@@ -18372,6 +18499,7 @@ var TransportManager = (function () {
                 // This library will try to handle the message or fire the appropriate events
                 switch (controlMessage.type) {
                     case 'ping':
+                        info.pingInterval = controlMessage.details.interval || 0;
                         this.sendControlMessage(info.url, 'ping-reply', {}, controlMessage.requestId);
                         break;
                     case 'history-message': {
@@ -18431,7 +18559,7 @@ var TransportManager = (function () {
         return root + "-" + this.counters[root];
     };
     TransportManager.prototype.sendControl = function (messageId, info, type, details, callback) {
-        if (info && info.connected) {
+        if (info && info.state === SocketState.Connected) {
             if (callback) {
                 this.controlCallbacks[messageId] = callback;
             }
@@ -18444,13 +18572,61 @@ var TransportManager = (function () {
     };
     TransportManager.prototype.send = function (channelId, message) {
         var info = this.socketsById[channelId];
-        if (info && info.connected) {
+        if (info && info.state === SocketState.Connected) {
             var bytes = channels_common_1.ChannelMessageUtils.serializeChannelMessage(message, 0, 0);
             info.socket.send(bytes.buffer);
         }
         else {
             throw new Error("Socket not connected to this channel");
         }
+    };
+    TransportManager.prototype.ensureSocketPolling = function () {
+        if (!this.polling) {
+            this.polling = true;
+            this.socketPoll();
+        }
+    };
+    TransportManager.prototype.socketPoll = function () {
+        var _this = this;
+        setTimeout(function () {
+            try {
+                for (var url in _this.sockets) {
+                    if (_this.sockets.hasOwnProperty(url)) {
+                        var info = _this.sockets[url];
+                        if (info.connectedOnce) {
+                            switch (info.state) {
+                                case SocketState.Offline:
+                                    try {
+                                        _this.reconnectSocket(info);
+                                    }
+                                    catch (_) {
+                                        // noop
+                                    }
+                                    break;
+                                case SocketState.Connected:
+                                    if (info.pingInterval > 0) {
+                                        var now = (new Date()).getTime();
+                                        if ((now - info.lastContact) > (2 * info.pingInterval)) {
+                                            console.warn("Socket with " + url + " has not been contacted for 2 * pingInterval. Disconnecting and will try to reconnect.");
+                                            info.socket.close();
+                                        }
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+            finally {
+                _this.socketPoll();
+            }
+        }, 6000);
+    };
+    TransportManager.prototype.reconnectSocket = function (info) {
+        console.log("Reconnecting socket: " + info.url);
+        this.connect(info.url);
     };
     return TransportManager;
 }());
