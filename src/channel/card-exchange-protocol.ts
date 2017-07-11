@@ -1,3 +1,5 @@
+import { ChannelMessage } from "channels-common";
+
 export const CARD_EXCHANGE_PROTOCOL_ID = "https://channelelements.com/channel-protocols/card-exchange/v1";
 
 export interface JsonPlusBinaryMessage<T> {
@@ -66,6 +68,6 @@ export interface ChannelWebComponent extends HTMLElement {
   binary?: Uint8Array;
 
   // methods:  view-mode only
-  handleCardToCardMessageReceived(sender: ParticipantInfo, details: CardToCardMessageDetails): void; // view mode only
+  handleCardToCardMessageReceived(sender: ParticipantInfo, details: CardToCardMessageDetails, rawMessage: ChannelMessage): void; // view mode only
 }
 // Component fires:  'resize' when it has unilaterally changed its own size (e.g., based on a message received)
