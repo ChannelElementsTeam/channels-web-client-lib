@@ -323,7 +323,7 @@ export class ChannelsClient implements SocketConnectionListener {
   }
 
   async getInviteInfo(inviteCode: string): Promise<ChannelShareCodeResponse> {
-    const headers = { "Content-Type": "application/json" };
+    const headers = { "Accept": "application/json" };
     return await Rest.get<ChannelShareCodeResponse>(inviteCode, headers);
   }
 
