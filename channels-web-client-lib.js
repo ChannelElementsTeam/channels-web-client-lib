@@ -8518,11 +8518,11 @@ Stream.prototype.pipe = function(dest, options) {
 /* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(Buffer) {var Transform = __webpack_require__(11).Transform
-var inherits = __webpack_require__(1)
+var Buffer = __webpack_require__(3).Buffer
+var Transform = __webpack_require__(11).Transform
 var StringDecoder = __webpack_require__(41).StringDecoder
-module.exports = CipherBase
-inherits(CipherBase, Transform)
+var inherits = __webpack_require__(1)
+
 function CipherBase (hashMode) {
   Transform.call(this)
   this.hashMode = typeof hashMode === 'string'
@@ -8531,25 +8531,31 @@ function CipherBase (hashMode) {
   } else {
     this.final = this._finalOrDigest
   }
+  if (this._final) {
+    this.__final = this._final
+    this._final = null
+  }
   this._decoder = null
   this._encoding = null
 }
+inherits(CipherBase, Transform)
+
 CipherBase.prototype.update = function (data, inputEnc, outputEnc) {
   if (typeof data === 'string') {
-    data = new Buffer(data, inputEnc)
+    data = Buffer.from(data, inputEnc)
   }
+
   var outData = this._update(data)
-  if (this.hashMode) {
-    return this
-  }
+  if (this.hashMode) return this
+
   if (outputEnc) {
     outData = this._toString(outData, outputEnc)
   }
+
   return outData
 }
 
 CipherBase.prototype.setAutoPadding = function () {}
-
 CipherBase.prototype.getAuthTag = function () {
   throw new Error('trying to get auth tag in unsupported state')
 }
@@ -8579,15 +8585,15 @@ CipherBase.prototype._transform = function (data, _, next) {
 CipherBase.prototype._flush = function (done) {
   var err
   try {
-    this.push(this._final())
+    this.push(this.__final())
   } catch (e) {
     err = e
-  } finally {
-    done(err)
   }
+
+  done(err)
 }
 CipherBase.prototype._finalOrDigest = function (outputEnc) {
-  var outData = this._final() || new Buffer('')
+  var outData = this.__final() || Buffer.alloc(0)
   if (outputEnc) {
     outData = this._toString(outData, outputEnc, true)
   }
@@ -8599,17 +8605,19 @@ CipherBase.prototype._toString = function (value, enc, fin) {
     this._decoder = new StringDecoder(enc)
     this._encoding = enc
   }
-  if (this._encoding !== enc) {
-    throw new Error('can\'t switch encodings')
-  }
+
+  if (this._encoding !== enc) throw new Error('can\'t switch encodings')
+
   var out = this._decoder.write(value)
   if (fin) {
     out += this._decoder.end()
   }
+
   return out
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0).Buffer))
+module.exports = CipherBase
+
 
 /***/ }),
 /* 13 */
@@ -12406,7 +12414,9 @@ exports.randomBytes = exports.rng = exports.pseudoRandomBytes = exports.prng = _
 exports.createHash = exports.Hash = __webpack_require__(13)
 exports.createHmac = exports.Hmac = __webpack_require__(56)
 
-var hashes = ['sha1', 'sha224', 'sha256', 'sha384', 'sha512', 'md5', 'rmd160'].concat(Object.keys(__webpack_require__(126)))
+var algos = __webpack_require__(126)
+var algoKeys = Object.keys(algos)
+var hashes = ['sha1', 'sha224', 'sha256', 'sha384', 'sha512', 'md5', 'rmd160'].concat(algoKeys)
 exports.getHashes = function () {
   return hashes
 }
@@ -12416,67 +12426,80 @@ exports.pbkdf2 = p.pbkdf2
 exports.pbkdf2Sync = p.pbkdf2Sync
 
 var aes = __webpack_require__(128)
-;[
-  'Cipher',
-  'createCipher',
-  'Cipheriv',
-  'createCipheriv',
-  'Decipher',
-  'createDecipher',
-  'Decipheriv',
-  'createDecipheriv',
-  'getCiphers',
-  'listCiphers'
-].forEach(function (key) {
-  exports[key] = aes[key]
-})
+
+exports.Cipher = aes.Cipher
+exports.createCipher = aes.createCipher
+exports.Cipheriv = aes.Cipheriv
+exports.createCipheriv = aes.createCipheriv
+exports.Decipher = aes.Decipher
+exports.createDecipher = aes.createDecipher
+exports.Decipheriv = aes.Decipheriv
+exports.createDecipheriv = aes.createDecipheriv
+exports.getCiphers = aes.getCiphers
+exports.listCiphers = aes.listCiphers
 
 var dh = __webpack_require__(139)
-;[
-  'DiffieHellmanGroup',
-  'createDiffieHellmanGroup',
-  'getDiffieHellman',
-  'createDiffieHellman',
-  'DiffieHellman'
-].forEach(function (key) {
-  exports[key] = dh[key]
-})
+
+exports.DiffieHellmanGroup = dh.DiffieHellmanGroup
+exports.createDiffieHellmanGroup = dh.createDiffieHellmanGroup
+exports.getDiffieHellman = dh.getDiffieHellman
+exports.createDiffieHellman = dh.createDiffieHellman
+exports.DiffieHellman = dh.DiffieHellman
 
 var sign = __webpack_require__(143)
-;[
-  'createSign',
-  'Sign',
-  'createVerify',
-  'Verify'
-].forEach(function (key) {
-  exports[key] = sign[key]
-})
+
+exports.createSign = sign.createSign
+exports.Sign = sign.Sign
+exports.createVerify = sign.createVerify
+exports.Verify = sign.Verify
 
 exports.createECDH = __webpack_require__(180)
 
 var publicEncrypt = __webpack_require__(181)
 
-;[
-  'publicEncrypt',
-  'privateEncrypt',
-  'publicDecrypt',
-  'privateDecrypt'
-].forEach(function (key) {
-  exports[key] = publicEncrypt[key]
-})
+exports.publicEncrypt = publicEncrypt.publicEncrypt
+exports.privateEncrypt = publicEncrypt.privateEncrypt
+exports.publicDecrypt = publicEncrypt.publicDecrypt
+exports.privateDecrypt = publicEncrypt.privateDecrypt
 
 // the least I can do is make error messages for the rest of the node.js/crypto api.
-;[
-  'createCredentials'
-].forEach(function (name) {
-  exports[name] = function () {
-    throw new Error([
-      'sorry, ' + name + ' is not implemented yet',
-      'we accept pull requests',
-      'https://github.com/crypto-browserify/crypto-browserify'
-    ].join('\n'))
-  }
-})
+// ;[
+//   'createCredentials'
+// ].forEach(function (name) {
+//   exports[name] = function () {
+//     throw new Error([
+//       'sorry, ' + name + ' is not implemented yet',
+//       'we accept pull requests',
+//       'https://github.com/crypto-browserify/crypto-browserify'
+//     ].join('\n'))
+//   }
+// })
+
+exports.createCredentials = function () {
+  throw new Error([
+    'sorry, createCredentials is not implemented yet',
+    'we accept pull requests',
+    'https://github.com/crypto-browserify/crypto-browserify'
+  ].join('\n'))
+}
+
+exports.constants = {
+  'DH_CHECK_P_NOT_SAFE_PRIME': 2,
+  'DH_CHECK_P_NOT_PRIME': 1,
+  'DH_UNABLE_TO_CHECK_GENERATOR': 4,
+  'DH_NOT_SUITABLE_GENERATOR': 8,
+  'NPN_ENABLED': 1,
+  'ALPN_ENABLED': 1,
+  'RSA_PKCS1_PADDING': 1,
+  'RSA_SSLV23_PADDING': 2,
+  'RSA_NO_PADDING': 3,
+  'RSA_PKCS1_OAEP_PADDING': 4,
+  'RSA_X931_PADDING': 5,
+  'RSA_PKCS1_PSS_PADDING': 6,
+  'POINT_CONVERSION_COMPRESSED': 2,
+  'POINT_CONVERSION_UNCOMPRESSED': 4,
+  'POINT_CONVERSION_HYBRID': 6
+}
 
 
 /***/ }),
@@ -19625,10 +19648,11 @@ var ChannelMessageUtils = (function () {
         var result = new Uint8Array(length);
         var view = new DataView(result.buffer);
         // Populate the header...
-        var timestamp = Date.now() + clockSkew;
+        var timestamp = messageInfo.timestamp || (Date.now() + clockSkew);
         if (timestamp <= lastTimestampSent) {
             timestamp = lastTimestampSent + 1;
         }
+        messageInfo.timestamp = timestamp;
         view.setUint16(0, this.CHANNEL_ELEMENTS_VERSION_V1);
         var topTime = Math.floor(timestamp / (Math.pow(2, 32)));
         view.setUint16(2, topTime);
@@ -23580,18 +23604,18 @@ module.exports = {
 	"_args": [
 		[
 			{
-				"raw": "elliptic@^6.2.3",
+				"raw": "elliptic@^6.0.0",
 				"scope": null,
 				"escapedName": "elliptic",
 				"name": "elliptic",
-				"rawSpec": "^6.2.3",
-				"spec": ">=6.2.3 <7.0.0",
+				"rawSpec": "^6.0.0",
+				"spec": ">=6.0.0 <7.0.0",
 				"type": "range"
 			},
-			"/Users/kduffie/git/channels-web-client-lib/node_modules/secp256k1"
+			"/Users/preetshihn/work/ce/channels-web-client-lib/node_modules/browserify-sign"
 		]
 	],
-	"_from": "elliptic@>=6.2.3 <7.0.0",
+	"_from": "elliptic@>=6.0.0 <7.0.0",
 	"_id": "elliptic@6.4.0",
 	"_inCache": true,
 	"_location": "/elliptic",
@@ -23607,24 +23631,23 @@ module.exports = {
 	"_npmVersion": "3.10.8",
 	"_phantomChildren": {},
 	"_requested": {
-		"raw": "elliptic@^6.2.3",
+		"raw": "elliptic@^6.0.0",
 		"scope": null,
 		"escapedName": "elliptic",
 		"name": "elliptic",
-		"rawSpec": "^6.2.3",
-		"spec": ">=6.2.3 <7.0.0",
+		"rawSpec": "^6.0.0",
+		"spec": ">=6.0.0 <7.0.0",
 		"type": "range"
 	},
 	"_requiredBy": [
 		"/browserify-sign",
-		"/create-ecdh",
-		"/secp256k1"
+		"/create-ecdh"
 	],
 	"_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.4.0.tgz",
 	"_shasum": "cac9af8762c85836187003c8dfe193e5e2eae5df",
 	"_shrinkwrap": null,
-	"_spec": "elliptic@^6.2.3",
-	"_where": "/Users/kduffie/git/channels-web-client-lib/node_modules/secp256k1",
+	"_spec": "elliptic@^6.0.0",
+	"_where": "/Users/preetshihn/work/ce/channels-web-client-lib/node_modules/browserify-sign",
 	"author": {
 		"name": "Fedor Indutny",
 		"email": "fedor@indutny.com"
@@ -35827,7 +35850,7 @@ module.exports = {
 				"spec": ">=5.1.0 <6.0.0",
 				"type": "range"
 			},
-			"/Users/kduffie/git/channels-web-client-lib/node_modules/key-encoder"
+			"/Users/preetshihn/work/ce/channels-web-client-lib/node_modules/key-encoder"
 		]
 	],
 	"_from": "elliptic@>=5.1.0 <6.0.0",
@@ -35857,7 +35880,7 @@ module.exports = {
 	"_shasum": "fa294b6563c6ddbc9ba3dc8594687ae840858f10",
 	"_shrinkwrap": null,
 	"_spec": "elliptic@^5.1.0",
-	"_where": "/Users/kduffie/git/channels-web-client-lib/node_modules/key-encoder",
+	"_where": "/Users/preetshihn/work/ce/channels-web-client-lib/node_modules/key-encoder",
 	"author": {
 		"name": "Fedor Indutny",
 		"email": "fedor@indutny.com"
