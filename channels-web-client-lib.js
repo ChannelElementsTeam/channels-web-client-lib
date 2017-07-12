@@ -19625,10 +19625,11 @@ var ChannelMessageUtils = (function () {
         var result = new Uint8Array(length);
         var view = new DataView(result.buffer);
         // Populate the header...
-        var timestamp = Date.now() + clockSkew;
+        var timestamp = messageInfo.timestamp || (Date.now() + clockSkew);
         if (timestamp <= lastTimestampSent) {
             timestamp = lastTimestampSent + 1;
         }
+        messageInfo.timestamp = timestamp;
         view.setUint16(0, this.CHANNEL_ELEMENTS_VERSION_V1);
         var topTime = Math.floor(timestamp / (Math.pow(2, 32)));
         view.setUint16(2, topTime);
@@ -23580,18 +23581,18 @@ module.exports = {
 	"_args": [
 		[
 			{
-				"raw": "elliptic@^6.2.3",
+				"raw": "elliptic@^6.0.0",
 				"scope": null,
 				"escapedName": "elliptic",
 				"name": "elliptic",
-				"rawSpec": "^6.2.3",
-				"spec": ">=6.2.3 <7.0.0",
+				"rawSpec": "^6.0.0",
+				"spec": ">=6.0.0 <7.0.0",
 				"type": "range"
 			},
-			"/Users/kduffie/git/channels-web-client-lib/node_modules/secp256k1"
+			"/Users/preetshihn/work/ce/channels-web-client-lib/node_modules/browserify-sign"
 		]
 	],
-	"_from": "elliptic@>=6.2.3 <7.0.0",
+	"_from": "elliptic@>=6.0.0 <7.0.0",
 	"_id": "elliptic@6.4.0",
 	"_inCache": true,
 	"_location": "/elliptic",
@@ -23607,24 +23608,23 @@ module.exports = {
 	"_npmVersion": "3.10.8",
 	"_phantomChildren": {},
 	"_requested": {
-		"raw": "elliptic@^6.2.3",
+		"raw": "elliptic@^6.0.0",
 		"scope": null,
 		"escapedName": "elliptic",
 		"name": "elliptic",
-		"rawSpec": "^6.2.3",
-		"spec": ">=6.2.3 <7.0.0",
+		"rawSpec": "^6.0.0",
+		"spec": ">=6.0.0 <7.0.0",
 		"type": "range"
 	},
 	"_requiredBy": [
 		"/browserify-sign",
-		"/create-ecdh",
-		"/secp256k1"
+		"/create-ecdh"
 	],
 	"_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.4.0.tgz",
 	"_shasum": "cac9af8762c85836187003c8dfe193e5e2eae5df",
 	"_shrinkwrap": null,
-	"_spec": "elliptic@^6.2.3",
-	"_where": "/Users/kduffie/git/channels-web-client-lib/node_modules/secp256k1",
+	"_spec": "elliptic@^6.0.0",
+	"_where": "/Users/preetshihn/work/ce/channels-web-client-lib/node_modules/browserify-sign",
 	"author": {
 		"name": "Fedor Indutny",
 		"email": "fedor@indutny.com"
@@ -35827,7 +35827,7 @@ module.exports = {
 				"spec": ">=5.1.0 <6.0.0",
 				"type": "range"
 			},
-			"/Users/kduffie/git/channels-web-client-lib/node_modules/key-encoder"
+			"/Users/preetshihn/work/ce/channels-web-client-lib/node_modules/key-encoder"
 		]
 	],
 	"_from": "elliptic@>=5.1.0 <6.0.0",
@@ -35857,7 +35857,7 @@ module.exports = {
 	"_shasum": "fa294b6563c6ddbc9ba3dc8594687ae840858f10",
 	"_shrinkwrap": null,
 	"_spec": "elliptic@^5.1.0",
-	"_where": "/Users/kduffie/git/channels-web-client-lib/node_modules/key-encoder",
+	"_where": "/Users/preetshihn/work/ce/channels-web-client-lib/node_modules/key-encoder",
 	"author": {
 		"name": "Fedor Indutny",
 		"email": "fedor@indutny.com"
