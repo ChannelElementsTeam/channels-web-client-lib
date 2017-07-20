@@ -2,11 +2,11 @@ import { Rest } from './rest';
 import { ClientDb, ProviderInfo } from './db';
 import { TransportManager, MessageCallback, HistoryMessageCallback, SocketConnectionListener } from './transport';
 import {
-  ChannelDeletedNotificationDetails, ChannelServiceDescription, ChannelCreateDetails, ChannelCreateResponse, SignedKeyIdentity, ChannelInformation,
-  ChannelServiceRequest, SignedAddressIdentity, ChannelShareDetails, ChannelShareResponse, ChannelShareCodeResponse, MemberContractDetails, ChannelDeleteResponse,
+  ChannelDeletedNotificationDetails, ChannelCreateDetails, ChannelCreateResponse, SignedKeyIdentity, ChannelInformation,
+  SignedAddressIdentity, ChannelShareDetails, ChannelShareResponse, ChannelShareCodeResponse, MemberContractDetails, ChannelDeleteResponse,
   JoinResponseDetails, ChannelMessage, JoinNotificationDetails, LeaveNotificationDetails, ChannelAcceptResponse, ChannelAcceptDetails, ChannelDeleteDetails,
   MessageToSerialize, HistoryResponseDetails, LeaveRequestDetails, ChannelsListDetails, ChannelsListResponse, ChannelGetResponse, ChannelGetDetails,
-  HistoryRequestDetails, JoinRequestDetails
+  HistoryRequestDetails, JoinRequestDetails, SwitchingServiceRequest, SwitchServiceDescription, SwitchRegisterUserDetails, SwitchRegisterUserResponse
 } from 'channels-common';
 
 export * from 'channels-common';
@@ -24,6 +24,8 @@ export interface AccptInvitationResponse {
   channel: ChannelAcceptResponse;
   provider: ProviderInfo;
 }
+
+const SWITCH_PROTOCOL_VERSION = 1;
 
 export class ChannelsClient implements SocketConnectionListener {
   private db: ClientDb;
@@ -274,13 +276,13 @@ export class ChannelsClient implements SocketConnectionListener {
     await this.db.open();
   }
 
-  async getProvider(serverUrl: string): Promise<ChannelServiceDescription> {
+  async getProvider(serverUrl: string): Promise<SwitchServiceDescription> {
     await this.ensureDb();
     const cached = await this.db.getProviderByUrl(serverUrl);
     if (cached) {
       return cached.details;
     }
-    const providerInfo = await Rest.get<ChannelServiceDescription>(serverUrl);
+    const providerInfo = await Rest.get<SwitchServiceDescription>(serverUrl);
     if (providerInfo && providerInfo.serviceEndpoints) {
       await this.db.saveProvider(serverUrl, providerInfo);
       return providerInfo;
@@ -289,7 +291,7 @@ export class ChannelsClient implements SocketConnectionListener {
     throw new Error("Failed to fetch provider info - invalid response");
   }
 
-  async getProviderById(id: number): Promise<ChannelServiceDescription> {
+  async getProviderById(id: number): Promise<SwitchServiceDescription> {
     await this.ensureDb();
     return (await this.db.getProviderById(id)).details;
   }
@@ -299,9 +301,21 @@ export class ChannelsClient implements SocketConnectionListener {
     return await this.db.getProviderByUrl(url);
   }
 
-  async createChannel(providerUrl: string, identity: SignedKeyIdentity, details: ChannelCreateDetails): Promise<ChannelCreateResponse> {
+  async registerWithSwitch(providerUrl: string, identity: SignedKeyIdentity, details: SwitchRegisterUserDetails): Promise<SwitchRegisterUserResponse> {
     const provider = await this.getProvider(providerUrl);
-    const request: ChannelServiceRequest<SignedKeyIdentity, ChannelCreateDetails> = {
+    const request: SwitchingServiceRequest<SignedKeyIdentity, SwitchRegisterUserDetails> = {
+      version: SWITCH_PROTOCOL_VERSION,
+      type: 'register-user',
+      identity: identity,
+      details: details
+    };
+    return await Rest.post<SwitchRegisterUserResponse>(provider.serviceEndpoints.restServiceUrl, request);
+  }
+
+  async createChannel(providerUrl: string, identity: SignedAddressIdentity, details: ChannelCreateDetails): Promise<ChannelCreateResponse> {
+    const provider = await this.getProvider(providerUrl);
+    const request: SwitchingServiceRequest<SignedAddressIdentity, ChannelCreateDetails> = {
+      version: SWITCH_PROTOCOL_VERSION,
       type: 'create',
       identity: identity,
       details: details
@@ -314,7 +328,8 @@ export class ChannelsClient implements SocketConnectionListener {
     if (!provider) {
       throw new Error("No provider registered with id: " + providerId);
     }
-    const shareRequest: ChannelServiceRequest<SignedAddressIdentity, ChannelShareDetails> = {
+    const shareRequest: SwitchingServiceRequest<SignedAddressIdentity, ChannelShareDetails> = {
+      version: SWITCH_PROTOCOL_VERSION,
       type: 'share',
       identity: identity,
       details: details
@@ -327,7 +342,7 @@ export class ChannelsClient implements SocketConnectionListener {
     return await Rest.get<ChannelShareCodeResponse>(inviteCode, headers);
   }
 
-  async acceptInvitation(inviteCode: string, identity: SignedKeyIdentity, memberContract?: MemberContractDetails): Promise<AccptInvitationResponse> {
+  async acceptInvitation(inviteCode: string, identity: SignedAddressIdentity, memberContract?: MemberContractDetails): Promise<AccptInvitationResponse> {
     const inviteInfo = await this.getInviteInfo(inviteCode);
     const provider = await this.getProvider(inviteInfo.serviceEndpoints.descriptionUrl);
     const mc = memberContract || { subscribe: false };
@@ -335,7 +350,8 @@ export class ChannelsClient implements SocketConnectionListener {
       invitationId: inviteInfo.invitationId,
       memberContract: mc
     };
-    const request: ChannelServiceRequest<SignedKeyIdentity, ChannelAcceptDetails> = {
+    const request: SwitchingServiceRequest<SignedAddressIdentity, ChannelAcceptDetails> = {
+      version: SWITCH_PROTOCOL_VERSION,
       identity: identity,
       type: 'accept',
       details: details
@@ -385,8 +401,9 @@ export class ChannelsClient implements SocketConnectionListener {
     return result;
   }
 
-  private async getChannelsFromProvider(provider: ChannelServiceDescription, identity: SignedAddressIdentity): Promise<ChannelsListResponse> {
-    const request: ChannelServiceRequest<SignedAddressIdentity, ChannelsListDetails> = {
+  private async getChannelsFromProvider(provider: SwitchServiceDescription, identity: SignedAddressIdentity): Promise<ChannelsListResponse> {
+    const request: SwitchingServiceRequest<SignedAddressIdentity, ChannelsListDetails> = {
+      version: SWITCH_PROTOCOL_VERSION,
       type: 'list',
       identity: identity,
       details: {}
@@ -399,7 +416,8 @@ export class ChannelsClient implements SocketConnectionListener {
     const details: ChannelGetDetails = {
       channel: channelAddress
     };
-    const request: ChannelServiceRequest<SignedAddressIdentity, ChannelGetDetails> = {
+    const request: SwitchingServiceRequest<SignedAddressIdentity, ChannelGetDetails> = {
+      version: SWITCH_PROTOCOL_VERSION,
       type: 'get',
       identity: identity,
       details: details
@@ -412,7 +430,8 @@ export class ChannelsClient implements SocketConnectionListener {
     const details: ChannelDeleteDetails = {
       channel: channelAddress
     };
-    const request: ChannelServiceRequest<SignedAddressIdentity, ChannelDeleteDetails> = {
+    const request: SwitchingServiceRequest<SignedAddressIdentity, ChannelDeleteDetails> = {
+      version: SWITCH_PROTOCOL_VERSION,
       type: 'delete',
       identity: identity,
       details: details

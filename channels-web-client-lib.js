@@ -18256,6 +18256,7 @@ var rest_1 = __webpack_require__(98);
 var db_1 = __webpack_require__(99);
 var transport_1 = __webpack_require__(100);
 __export(__webpack_require__(25));
+var SWITCH_PROTOCOL_VERSION = 1;
 var ChannelsClient = (function () {
     function ChannelsClient() {
         var _this = this;
@@ -18572,6 +18573,26 @@ var ChannelsClient = (function () {
             });
         });
     };
+    ChannelsClient.prototype.registerWithSwitch = function (providerUrl, identity, details) {
+        return __awaiter(this, void 0, void 0, function () {
+            var provider, request;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.getProvider(providerUrl)];
+                    case 1:
+                        provider = _a.sent();
+                        request = {
+                            version: SWITCH_PROTOCOL_VERSION,
+                            type: 'register-user',
+                            identity: identity,
+                            details: details
+                        };
+                        return [4 /*yield*/, rest_1.Rest.post(provider.serviceEndpoints.restServiceUrl, request)];
+                    case 2: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
     ChannelsClient.prototype.createChannel = function (providerUrl, identity, details) {
         return __awaiter(this, void 0, void 0, function () {
             var provider, request;
@@ -18581,6 +18602,7 @@ var ChannelsClient = (function () {
                     case 1:
                         provider = _a.sent();
                         request = {
+                            version: SWITCH_PROTOCOL_VERSION,
                             type: 'create',
                             identity: identity,
                             details: details
@@ -18603,6 +18625,7 @@ var ChannelsClient = (function () {
                             throw new Error("No provider registered with id: " + providerId);
                         }
                         shareRequest = {
+                            version: SWITCH_PROTOCOL_VERSION,
                             type: 'share',
                             identity: identity,
                             details: details
@@ -18643,6 +18666,7 @@ var ChannelsClient = (function () {
                             memberContract: mc
                         };
                         request = {
+                            version: SWITCH_PROTOCOL_VERSION,
                             identity: identity,
                             type: 'accept',
                             details: details
@@ -18738,6 +18762,7 @@ var ChannelsClient = (function () {
                 switch (_a.label) {
                     case 0:
                         request = {
+                            version: SWITCH_PROTOCOL_VERSION,
                             type: 'list',
                             identity: identity,
                             details: {}
@@ -18760,6 +18785,7 @@ var ChannelsClient = (function () {
                             channel: channelAddress
                         };
                         request = {
+                            version: SWITCH_PROTOCOL_VERSION,
                             type: 'get',
                             identity: identity,
                             details: details
@@ -18782,6 +18808,7 @@ var ChannelsClient = (function () {
                             channel: channelAddress
                         };
                         request = {
+                            version: SWITCH_PROTOCOL_VERSION,
                             type: 'delete',
                             identity: identity,
                             details: details
@@ -19578,8 +19605,8 @@ __export(__webpack_require__(106));
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CHANNELS_PROTOCOL = "https://channelelements.com/protocols/client-server/0.2.0";
-//# sourceMappingURL=channel-service-rest.js.map
+exports.CHANNELS_SWITCH_PROTOCOL = "https://channelelements.org/protocols/switch";
+//# sourceMappingURL=channel-switching-rest.js.map
 
 /***/ }),
 /* 103 */
@@ -19588,7 +19615,7 @@ exports.CHANNELS_PROTOCOL = "https://channelelements.com/protocols/client-server
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BANKING_PROTOCOL = "https://channelelements.com/protocols/banking/0.1.0";
+exports.CHANNELS_BANK_PROTOCOL = "https://channelelements.org/protocols/bank";
 //# sourceMappingURL=bank-service-rest.js.map
 
 /***/ }),
@@ -23612,7 +23639,7 @@ module.exports = {
 				"spec": ">=6.0.0 <7.0.0",
 				"type": "range"
 			},
-			"/Users/preetshihn/work/ce/channels-web-client-lib/node_modules/browserify-sign"
+			"/Users/kduffie/git/channels-web-client-lib/node_modules/browserify-sign"
 		]
 	],
 	"_from": "elliptic@>=6.0.0 <7.0.0",
@@ -23647,7 +23674,7 @@ module.exports = {
 	"_shasum": "cac9af8762c85836187003c8dfe193e5e2eae5df",
 	"_shrinkwrap": null,
 	"_spec": "elliptic@^6.0.0",
-	"_where": "/Users/preetshihn/work/ce/channels-web-client-lib/node_modules/browserify-sign",
+	"_where": "/Users/kduffie/git/channels-web-client-lib/node_modules/browserify-sign",
 	"author": {
 		"name": "Fedor Indutny",
 		"email": "fedor@indutny.com"
@@ -35850,7 +35877,7 @@ module.exports = {
 				"spec": ">=5.1.0 <6.0.0",
 				"type": "range"
 			},
-			"/Users/preetshihn/work/ce/channels-web-client-lib/node_modules/key-encoder"
+			"/Users/kduffie/git/channels-web-client-lib/node_modules/key-encoder"
 		]
 	],
 	"_from": "elliptic@>=5.1.0 <6.0.0",
@@ -35880,7 +35907,7 @@ module.exports = {
 	"_shasum": "fa294b6563c6ddbc9ba3dc8594687ae840858f10",
 	"_shrinkwrap": null,
 	"_spec": "elliptic@^5.1.0",
-	"_where": "/Users/preetshihn/work/ce/channels-web-client-lib/node_modules/key-encoder",
+	"_where": "/Users/kduffie/git/channels-web-client-lib/node_modules/key-encoder",
 	"author": {
 		"name": "Fedor Indutny",
 		"email": "fedor@indutny.com"

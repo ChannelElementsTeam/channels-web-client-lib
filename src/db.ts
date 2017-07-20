@@ -1,4 +1,4 @@
-import { ChannelServiceDescription } from "channels-common";
+import { SwitchServiceDescription } from "channels-common";
 
 const DB_NAME = 'channels-db';
 const DB_VERSION = 2;
@@ -11,7 +11,7 @@ const MODE_READ = "readonly";
 export interface ProviderInfo {
   id?: number;
   providerUrl: string;
-  details: ChannelServiceDescription;
+  details: SwitchServiceDescription;
 }
 
 export class ClientDb {
@@ -48,7 +48,7 @@ export class ClientDb {
     return tx.objectStore(name);
   }
 
-  saveProvider(url: string, details: ChannelServiceDescription): Promise<void> {
+  saveProvider(url: string, details: SwitchServiceDescription): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const store = this.getStore(STORE_PROVIDER_INFO, MODE_READWRITE);
       try {
