@@ -301,7 +301,22 @@ export class ChannelsClient implements SocketConnectionListener {
     }
   }
 
-  async registerWithSwitch(providerUrl: string, identity: SignedKeyIdentity, details: SwitchRegisterUserDetails): Promise<SwitchRegisterUserResponse> {
+  async getSwitchInfo(url: string): Promise<SwitchInfo> {
+    await this.ensureDb();
+    return await this.db.getProviderByUrl(url);
+  }
+
+  async registerWithSwitch(providerUrl: string, identity: SignedKeyIdentity, details: SwitchRegisterUserDetails, force: boolean = false): Promise<void> {
+    let saved = null;
+    if (!force) {
+      // check if already registered
+      await this.ensureDb();
+      saved = await this.db.getProviderByUrl(providerUrl);
+      if (!saved) {
+        return;
+      }
+    }
+
     const provider = await this.getProvider(providerUrl);
     const request: SwitchingServiceRequest<SignedKeyIdentity, SwitchRegisterUserDetails> = {
       version: SWITCH_PROTOCOL_VERSION,
@@ -312,12 +327,13 @@ export class ChannelsClient implements SocketConnectionListener {
     const response = await Rest.post<SwitchRegisterUserResponse>(provider.serviceEndpoints.restServiceUrl, request);
     if (response) {
       await this.ensureDb();
-      const saved = await this.db.getProviderByUrl(providerUrl);
+      saved = await this.db.getProviderByUrl(providerUrl);
       if (!saved) {
         await this.db.saveProvider(providerUrl);
       }
     }
-    return response;
+    // return response;
+    return;
   }
 
   async createChannel(providerUrl: string, identity: SignedAddressIdentity, details: ChannelCreateDetails): Promise<ChannelCreateResponse> {
