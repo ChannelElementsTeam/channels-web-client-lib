@@ -5,7 +5,7 @@ import {
   ChannelDeletedNotificationDetails, ChannelCreateDetails, ChannelCreateResponse, SignedKeyIdentity, ChannelInformation,
   SignedAddressIdentity, ChannelShareDetails, ChannelShareResponse, ChannelShareCodeResponse, MemberContractDetails, ChannelDeleteResponse,
   JoinResponseDetails, ChannelMessage, JoinNotificationDetails, LeaveNotificationDetails, ChannelAcceptResponse, ChannelAcceptDetails, ChannelDeleteDetails,
-  MessageToSerialize, HistoryResponseDetails, LeaveRequestDetails, ChannelsListDetails, ChannelsListResponse, ChannelGetResponse, ChannelGetDetails,
+  MessageToSerialize, HistoryResponseDetails, LeaveRequestDetails, ChannelsListDetails, ChannelsListResponse, ChannelGetResponse, ChannelGetDetails, MemberIdentityInfo,
   HistoryRequestDetails, JoinRequestDetails, SwitchingServiceRequest, SwitchServiceDescription, SwitchRegisterUserDetails, SwitchRegisterUserResponse
 } from 'channels-common';
 
@@ -350,7 +350,7 @@ export class ChannelsClient implements SocketConnectionListener {
     return await Rest.get<ChannelShareCodeResponse>(inviteCode, headers);
   }
 
-  async acceptInvitation(inviteInfo: ChannelShareCodeResponse, identity: SignedAddressIdentity, memberContract?: MemberContractDetails): Promise<AccptInvitationResponse> {
+  async acceptInvitation(inviteInfo: ChannelShareCodeResponse, identity: SignedAddressIdentity, identityInfo: MemberIdentityInfo, memberContract?: MemberContractDetails): Promise<AccptInvitationResponse> {
     const providerUrl = inviteInfo.serviceEndpoints.descriptionUrl;
     const provider = await this.getProvider(providerUrl);
     await this.ensureDb();
@@ -362,7 +362,8 @@ export class ChannelsClient implements SocketConnectionListener {
     const mc = memberContract || { subscribe: false };
     const details: ChannelAcceptDetails = {
       invitationId: inviteInfo.invitationId,
-      memberContract: mc
+      memberContract: mc,
+      memberIdentity: identityInfo
     };
     const request: SwitchingServiceRequest<SignedAddressIdentity, ChannelAcceptDetails> = {
       version: SWITCH_PROTOCOL_VERSION,

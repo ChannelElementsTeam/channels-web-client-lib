@@ -22,7 +22,7 @@
     "webpack": "^3.0.0"
   },
   "dependencies": {
-    "channels-common": "^0.2.1",
+    "channels-common": "^0.2.5",
     "text-encoding-utf-8": "^1.0.1"
   }
 }
