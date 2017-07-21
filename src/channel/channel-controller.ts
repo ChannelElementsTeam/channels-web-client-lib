@@ -1,7 +1,7 @@
 import { ChannelsClient, ParticipantListener, ChannelSocketListener, ChannelDeletedListener } from '../client';
 import {
   ChannelInformation, JoinResponseDetails, HistoryMessageDetails, ChannelMessage, JoinNotificationDetails, LeaveNotificationDetails,
-  ChannelIdentityUtils, SignedKeyIdentity, FullIdentity, ChannelDeletedNotificationDetails
+  ChannelIdentityUtils, SignedKeyIdentity, MemberIdentityInfo, ChannelDeletedNotificationDetails
 } from "channels-common";
 import { HistoryMessageCallback, MessageCallback } from '../transport';
 import { DeserializedCardExchangeMessage, ChannelWebComponent, JsonPlusBinaryMessage } from './card-exchange-protocol';
@@ -11,7 +11,7 @@ import { CardUtils } from './channel-card-utils';
 interface ParticipantInfo {
   identity: SignedKeyIdentity;
   code?: number;
-  details?: FullIdentity;
+  details?: MemberIdentityInfo;
   isCreator?: boolean;
   memberSince?: number;
   lastActive?: number;
@@ -157,14 +157,14 @@ export class ChannelController {
   private handleParticipant(joined: JoinNotificationDetails, left: LeaveNotificationDetails): void {
     if (joined) {
       const participantInfo: ParticipantInfo = {
-        identity: joined.memberIdentity,
-        code: joined.participantCode
+        identity: joined.signedIdentity,
+        code: joined.participantCode,
       };
-      const details = ChannelIdentityUtils.decode<FullIdentity>(participantInfo.identity.signature, participantInfo.identity.publicKey, 0);
-      participantInfo.details = details;
+      participantInfo.details = joined.memberIdentity;
+      const decoded = ChannelIdentityUtils.decodeSignedKeySignature(joined.signedIdentity.signature, joined.signedIdentity.publicKey, 0);
       this.participantByCode[joined.participantCode] = participantInfo;
-      if (!this.participantByAddress[details.address]) {
-        this.participantByAddress[details.address] = participantInfo;
+      if (!this.participantByAddress[decoded.address]) {
+        this.participantByAddress[decoded.address] = participantInfo;
       }
       console.log("Participant joined", participantInfo);
       if (this.node) {
@@ -233,25 +233,26 @@ export class ChannelController {
     this.participantByCode = {};
     if (this.channelInfo && this.joinData) {
       for (const m of this.channelInfo.members) {
-        const fullIdentity = ChannelIdentityUtils.decode<FullIdentity>(m.identity.signature, m.identity.publicKey, 0);
+        const memberIdentity = m.memberIdentity;
         const p: ParticipantInfo = {
           identity: m.identity,
           isCreator: m.isCreator,
           lastActive: m.lastActive,
           memberSince: m.memberSince,
-          details: fullIdentity
+          details: memberIdentity
         };
-        this.participantByAddress[fullIdentity.address] = p;
+        const decoded = ChannelIdentityUtils.decodeAddressSignature(m.identity.signature, m.identity.publicKey, 0);
+        this.participantByAddress[decoded.address] = p;
       }
       for (const m of this.joinData.participants) {
-        const fullIdentity = ChannelIdentityUtils.decode<FullIdentity>(m.participantIdentity.signedIdentity.signature, m.participantIdentity.signedIdentity.publicKey, 0);
+        const memberIdentity = m.participantIdentity.memberIdentity;
         const p: ParticipantInfo = {
           code: m.code,
           identity: m.participantIdentity.signedIdentity,
           isCreator: m.isCreator,
           lastActive: m.lastActive,
           memberSince: m.memberSince,
-          details: fullIdentity,
+          details: memberIdentity,
           isYou: m.isYou
         };
         this.participantByCode[p.code] = p;
