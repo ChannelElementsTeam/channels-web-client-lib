@@ -18571,13 +18571,42 @@ var ChannelsClient = (function () {
             });
         });
     };
-    ChannelsClient.prototype.registerWithSwitch = function (providerUrl, identity, details) {
+    ChannelsClient.prototype.getSwitchInfo = function (url) {
         return __awaiter(this, void 0, void 0, function () {
-            var provider, request, response, saved;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getProvider(providerUrl)];
+                    case 0: return [4 /*yield*/, this.ensureDb()];
                     case 1:
+                        _a.sent();
+                        return [4 /*yield*/, this.db.getProviderByUrl(url)];
+                    case 2: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    ChannelsClient.prototype.registerWithSwitch = function (providerUrl, identity, details, force) {
+        if (force === void 0) { force = false; }
+        return __awaiter(this, void 0, void 0, function () {
+            var saved, provider, request, response;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        saved = null;
+                        if (!!force) return [3 /*break*/, 3];
+                        // check if already registered
+                        return [4 /*yield*/, this.ensureDb()];
+                    case 1:
+                        // check if already registered
+                        _a.sent();
+                        return [4 /*yield*/, this.db.getProviderByUrl(providerUrl)];
+                    case 2:
+                        saved = _a.sent();
+                        if (!saved) {
+                            return [2 /*return*/];
+                        }
+                        _a.label = 3;
+                    case 3: return [4 /*yield*/, this.getProvider(providerUrl)];
+                    case 4:
                         provider = _a.sent();
                         request = {
                             version: SWITCH_PROTOCOL_VERSION,
@@ -18586,21 +18615,23 @@ var ChannelsClient = (function () {
                             details: details
                         };
                         return [4 /*yield*/, rest_1.Rest.post(provider.serviceEndpoints.restServiceUrl, request)];
-                    case 2:
+                    case 5:
                         response = _a.sent();
-                        if (!response) return [3 /*break*/, 6];
+                        if (!response) return [3 /*break*/, 9];
                         return [4 /*yield*/, this.ensureDb()];
-                    case 3:
+                    case 6:
                         _a.sent();
                         return [4 /*yield*/, this.db.getProviderByUrl(providerUrl)];
-                    case 4:
+                    case 7:
                         saved = _a.sent();
-                        if (!!saved) return [3 /*break*/, 6];
+                        if (!!saved) return [3 /*break*/, 9];
                         return [4 /*yield*/, this.db.saveProvider(providerUrl)];
-                    case 5:
+                    case 8:
                         _a.sent();
-                        _a.label = 6;
-                    case 6: return [2 /*return*/, response];
+                        _a.label = 9;
+                    case 9: 
+                    // return response;
+                    return [2 /*return*/];
                 }
             });
         });
@@ -20478,28 +20509,31 @@ var ChannelIdentityUtils = (function () {
         };
         return result;
     };
-    ChannelIdentityUtils.createSignedKeyIdentity = function (keyInfo, address, publicKey) {
+    ChannelIdentityUtils.createSignedKeyIdentity = function (keyInfo) {
         var addressInfo = {
-            address: address,
-            publicKey: publicKey,
+            address: keyInfo.address,
+            publicKey: keyInfo.publicKeyPem,
             signedAt: Date.now()
         };
         var result = {
-            publicKey: publicKey,
+            publicKey: keyInfo.publicKeyPem,
             signature: this.sign(keyInfo, addressInfo)
         };
         return result;
     };
+    ChannelIdentityUtils.decodeSignedKey = function (signedKeyIdentity, expectedSignTime) {
+        return this.decodeSignedKeySignature(signedKeyIdentity.signature, signedKeyIdentity.publicKey, expectedSignTime);
+    };
     ChannelIdentityUtils.decodeSignedKeySignature = function (signature, publicKey, expectedSignTime) {
         return this.decode(signature, publicKey, expectedSignTime);
     };
-    ChannelIdentityUtils.createSignedAddressIdentity = function (keyInfo, address) {
+    ChannelIdentityUtils.createSignedAddressIdentity = function (keyInfo) {
         var addressInfo = {
-            address: address,
+            address: keyInfo.address,
             signedAt: Date.now()
         };
         var result = {
-            address: address,
+            address: keyInfo.address,
             signature: this.sign(keyInfo, addressInfo)
         };
         return result;
