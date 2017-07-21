@@ -1,17 +1,14 @@
-import { SwitchServiceDescription } from "channels-common";
+const DB_NAME = 'channels-web-lib';
+const DB_VERSION = 1;
 
-const DB_NAME = 'channels-db';
-const DB_VERSION = 2;
-
-const STORE_PROVIDER_INFO = "providers";
+const STORE_SWITCHES = "switches";
 
 const MODE_READWRITE = "readwrite";
 const MODE_READ = "readonly";
 
-export interface ProviderInfo {
+export interface SwitchInfo {
   id?: number;
-  providerUrl: string;
-  details: SwitchServiceDescription;
+  url: string;
 }
 
 export class ClientDb {
@@ -35,9 +32,9 @@ export class ClientDb {
       };
       request.onupgradeneeded = (event) => {
         const db = (event.target as any).result as IDBDatabase;
-        if (!db.objectStoreNames.contains(STORE_PROVIDER_INFO)) {
-          const store = db.createObjectStore(STORE_PROVIDER_INFO, { keyPath: 'id', autoIncrement: true });
-          store.createIndex('providerUrl', 'providerUrl', { unique: true });
+        if (!db.objectStoreNames.contains(STORE_SWITCHES)) {
+          const store = db.createObjectStore(STORE_SWITCHES, { keyPath: 'id', autoIncrement: true });
+          store.createIndex('url', 'url', { unique: true });
         }
       };
     });
@@ -48,14 +45,14 @@ export class ClientDb {
     return tx.objectStore(name);
   }
 
-  saveProvider(url: string, details: SwitchServiceDescription): Promise<void> {
+  saveProvider(url: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      const store = this.getStore(STORE_PROVIDER_INFO, MODE_READWRITE);
+      const store = this.getStore(STORE_SWITCHES, MODE_READWRITE);
       try {
-        const request = store.add({
-          providerUrl: url,
-          details: details
-        });
+        const switchInfo: SwitchInfo = {
+          url: url
+        };
+        const request = store.add(switchInfo);
         request.onerror = (event) => {
           reject(new Error("Error saving provider info: " + event));
         };
@@ -68,40 +65,40 @@ export class ClientDb {
     });
   }
 
-  getProviderByUrl(url: string): Promise<ProviderInfo> {
-    return new Promise<ProviderInfo>((resolve, reject) => {
-      const store = this.getStore(STORE_PROVIDER_INFO, MODE_READ);
-      const index = store.index('providerUrl');
+  getProviderByUrl(url: string): Promise<SwitchInfo> {
+    return new Promise<SwitchInfo>((resolve, reject) => {
+      const store = this.getStore(STORE_SWITCHES, MODE_READ);
+      const index = store.index('url');
       const request = index.get(url);
       request.onerror = (event) => {
         console.error("Failed to load registry from DB: ", event);
         reject(new Error("Failed to load registry: " + event));
       };
       request.onsuccess = (event) => {
-        resolve(request.result as ProviderInfo);
+        resolve(request.result as SwitchInfo);
       };
     });
   }
 
-  getProviderById(id: number): Promise<ProviderInfo> {
-    return new Promise<ProviderInfo>((resolve, reject) => {
-      const store = this.getStore(STORE_PROVIDER_INFO, MODE_READ);
+  getProviderById(id: number): Promise<SwitchInfo> {
+    return new Promise<SwitchInfo>((resolve, reject) => {
+      const store = this.getStore(STORE_SWITCHES, MODE_READ);
       const request = store.get(id);
       request.onerror = (event) => {
         console.error("Failed to load registry from DB: ", event);
         reject(new Error("Failed to load registry: " + event));
       };
       request.onsuccess = (event) => {
-        resolve(request.result);
+        resolve(request.result as SwitchInfo);
       };
     });
   }
 
-  getAllProviders(): Promise<ProviderInfo[]> {
-    return new Promise<ProviderInfo[]>((resolve, reject) => {
-      const store = this.getStore(STORE_PROVIDER_INFO, MODE_READ);
+  getAllProviders(): Promise<SwitchInfo[]> {
+    return new Promise<SwitchInfo[]>((resolve, reject) => {
+      const store = this.getStore(STORE_SWITCHES, MODE_READ);
       const request = store.openCursor();
-      const result: ProviderInfo[] = [];
+      const result: SwitchInfo[] = [];
       request.onerror = (event) => {
         console.error("Failed to open registry cursor: ", event);
         reject(new Error("Failed to open registry cursor: " + event));

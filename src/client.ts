@@ -1,5 +1,5 @@
 import { Rest } from './rest';
-import { ClientDb, ProviderInfo } from './db';
+import { ClientDb, SwitchInfo } from './db';
 import { TransportManager, MessageCallback, HistoryMessageCallback, SocketConnectionListener } from './transport';
 import {
   ChannelDeletedNotificationDetails, ChannelCreateDetails, ChannelCreateResponse, SignedKeyIdentity, ChannelInformation,
@@ -22,7 +22,7 @@ export interface ProviderChannelInformation extends ChannelInformation {
 export interface AccptInvitationResponse {
   shareCode: ChannelShareCodeResponse;
   channel: ChannelAcceptResponse;
-  provider: ProviderInfo;
+  provider: SwitchInfo;
 }
 
 const SWITCH_PROTOCOL_VERSION = 1;
@@ -37,6 +37,7 @@ export class ChannelsClient implements SocketConnectionListener {
   private channelParticipantListeners: { [channelAddress: string]: ParticipantListener[] } = {};
   private channelDeletedListeners: ChannelDeletedListener[] = [];
   private channelSocketListeners: { [channelAddress: string]: ChannelSocketListener[] } = {};
+  private switchByUrl: { [url: string]: SwitchServiceDescription } = {};
 
   constructor() {
     this.db = new ClientDb();
@@ -277,14 +278,13 @@ export class ChannelsClient implements SocketConnectionListener {
   }
 
   async getProvider(serverUrl: string): Promise<SwitchServiceDescription> {
-    await this.ensureDb();
-    const cached = await this.db.getProviderByUrl(serverUrl);
+    const cached = this.switchByUrl[serverUrl];
     if (cached) {
-      return cached.details;
+      return cached;
     }
     const providerInfo = await Rest.get<SwitchServiceDescription>(serverUrl);
     if (providerInfo && providerInfo.serviceEndpoints) {
-      await this.db.saveProvider(serverUrl, providerInfo);
+      this.switchByUrl[serverUrl] = providerInfo;
       return providerInfo;
     }
     console.error("Failed to fetch provider info - invalid response", providerInfo);
@@ -293,12 +293,12 @@ export class ChannelsClient implements SocketConnectionListener {
 
   async getProviderById(id: number): Promise<SwitchServiceDescription> {
     await this.ensureDb();
-    return (await this.db.getProviderById(id)).details;
-  }
-
-  async getProviderInfo(url: string): Promise<ProviderInfo> {
-    await this.ensureDb();
-    return await this.db.getProviderByUrl(url);
+    const info = await this.db.getProviderById(id);
+    if (info) {
+      return await this.getProvider(info.url);
+    } else {
+      return null;
+    }
   }
 
   async registerWithSwitch(providerUrl: string, identity: SignedKeyIdentity, details: SwitchRegisterUserDetails): Promise<SwitchRegisterUserResponse> {
@@ -309,7 +309,15 @@ export class ChannelsClient implements SocketConnectionListener {
       identity: identity,
       details: details
     };
-    return await Rest.post<SwitchRegisterUserResponse>(provider.serviceEndpoints.restServiceUrl, request);
+    const response = await Rest.post<SwitchRegisterUserResponse>(provider.serviceEndpoints.restServiceUrl, request);
+    if (response) {
+      await this.ensureDb();
+      const saved = await this.db.getProviderByUrl(providerUrl);
+      if (!saved) {
+        await this.db.saveProvider(providerUrl);
+      }
+    }
+    return response;
   }
 
   async createChannel(providerUrl: string, identity: SignedAddressIdentity, details: ChannelCreateDetails): Promise<ChannelCreateResponse> {
@@ -342,9 +350,15 @@ export class ChannelsClient implements SocketConnectionListener {
     return await Rest.get<ChannelShareCodeResponse>(inviteCode, headers);
   }
 
-  async acceptInvitation(inviteCode: string, identity: SignedAddressIdentity, memberContract?: MemberContractDetails): Promise<AccptInvitationResponse> {
-    const inviteInfo = await this.getInviteInfo(inviteCode);
-    const provider = await this.getProvider(inviteInfo.serviceEndpoints.descriptionUrl);
+  async acceptInvitation(inviteInfo: ChannelShareCodeResponse, identity: SignedAddressIdentity, memberContract?: MemberContractDetails): Promise<AccptInvitationResponse> {
+    const providerUrl = inviteInfo.serviceEndpoints.descriptionUrl;
+    const provider = await this.getProvider(providerUrl);
+    await this.ensureDb();
+    const switchInfo = await this.db.getProviderByUrl(providerUrl);
+    if (!switchInfo) {
+      throw new Error("Provider not registered");
+    }
+
     const mc = memberContract || { subscribe: false };
     const details: ChannelAcceptDetails = {
       invitationId: inviteInfo.invitationId,
@@ -360,7 +374,7 @@ export class ChannelsClient implements SocketConnectionListener {
     return {
       channel: channelInfo,
       shareCode: inviteInfo,
-      provider: await this.getProviderInfo(inviteInfo.serviceEndpoints.descriptionUrl)
+      provider: switchInfo
     };
   }
 
@@ -383,14 +397,15 @@ export class ChannelsClient implements SocketConnectionListener {
 
   async listAllChannels(identity: SignedAddressIdentity): Promise<ProviderChannelInformation[]> {
     await this.ensureDb();
-    const providers = await this.db.getAllProviders();
+    const switches = await this.db.getAllProviders();
     const result: ProviderChannelInformation[] = [];
-    for (const provider of providers) {
-      const listResponse = await this.getChannelsFromProvider(provider.details, identity);
+    for (const switchInfo of switches) {
+      const provider = await this.getProviderById(switchInfo.id);
+      const listResponse = await this.getChannelsFromProvider(provider, identity);
       if (listResponse && listResponse.channels) {
         for (const cs of listResponse.channels) {
           const pci = (cs as ProviderChannelInformation);
-          pci.providerId = provider.id;
+          pci.providerId = switchInfo.id;
           result.push(pci);
         }
       }
