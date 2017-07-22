@@ -312,7 +312,7 @@ export class ChannelsClient implements SocketConnectionListener {
       // check if already registered
       await this.ensureDb();
       saved = await this.db.getProviderByUrl(providerUrl);
-      if (!saved) {
+      if (saved) {
         return;
       }
     }
