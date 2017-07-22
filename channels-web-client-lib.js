@@ -18601,7 +18601,7 @@ var ChannelsClient = (function () {
                         return [4 /*yield*/, this.db.getProviderByUrl(providerUrl)];
                     case 2:
                         saved = _a.sent();
-                        if (!saved) {
+                        if (saved) {
                             return [2 /*return*/];
                         }
                         _a.label = 3;
