@@ -18212,9 +18212,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var client_1 = __webpack_require__(98);
 var channels_common_1 = __webpack_require__(25);
 var channel_controller_1 = __webpack_require__(237);
-window.ChannelsClient = client_1.ChannelsClient;
-window.ChannelIdentityUtils = channels_common_1.ChannelIdentityUtils;
-window.ChannelController = channel_controller_1.ChannelController;
+var anyWindow = window;
+anyWindow.ChannelsClient = client_1.ChannelsClient;
+anyWindow.ChannelIdentityUtils = channels_common_1.ChannelIdentityUtils;
+anyWindow.ChannelController = channel_controller_1.ChannelController;
+if (!anyWindow.TextDecoder) {
+    console.log("TextDecoder not present. Setting pollyfil");
+    anyWindow.TextDecoder = TextDecoder;
+}
+else {
+    console.log("TextDecoder detected.");
+}
 
 
 /***/ }),
