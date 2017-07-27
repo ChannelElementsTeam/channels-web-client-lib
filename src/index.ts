@@ -1,6 +1,7 @@
 import { ChannelsClient } from './client';
 import { ChannelIdentityUtils } from 'channels-common';
 import { ChannelController } from './channel/channel-controller';
+import { TextDecoder } from 'text-encoding-utf-8';
 
 const anyWindow = window as any;
 anyWindow.ChannelsClient = ChannelsClient;

@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 97);
+/******/ 	return __webpack_require__(__webpack_require__.s = 98);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -80,7 +80,7 @@
 
 var base64 = __webpack_require__(107)
 var ieee754 = __webpack_require__(108)
-var isArray = __webpack_require__(49)
+var isArray = __webpack_require__(50)
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
@@ -8733,7 +8733,7 @@ var util = __webpack_require__(19);
 util.inherits = __webpack_require__(1);
 /*</replacement>*/
 
-var Readable = __webpack_require__(51);
+var Readable = __webpack_require__(52);
 var Writable = __webpack_require__(40);
 
 util.inherits(Duplex, Readable);
@@ -8916,7 +8916,7 @@ asn1.bignum = __webpack_require__(203);
 
 asn1.define = __webpack_require__(204).define;
 asn1.base = __webpack_require__(34);
-asn1.constants = __webpack_require__(91);
+asn1.constants = __webpack_require__(92);
 asn1.decoders = __webpack_require__(208);
 asn1.encoders = __webpack_require__(210);
 
@@ -9207,7 +9207,7 @@ asn1.bignum = __webpack_require__(2);
 
 asn1.define = __webpack_require__(167).define;
 asn1.base = __webpack_require__(23);
-asn1.constants = __webpack_require__(79);
+asn1.constants = __webpack_require__(80);
 asn1.decoders = __webpack_require__(172);
 asn1.encoders = __webpack_require__(174);
 
@@ -9219,8 +9219,8 @@ asn1.encoders = __webpack_require__(174);
 var base = exports;
 
 base.Reporter = __webpack_require__(169).Reporter;
-base.DecoderBuffer = __webpack_require__(78).DecoderBuffer;
-base.EncoderBuffer = __webpack_require__(78).EncoderBuffer;
+base.DecoderBuffer = __webpack_require__(79).DecoderBuffer;
+base.EncoderBuffer = __webpack_require__(79).EncoderBuffer;
 base.Node = __webpack_require__(170);
 
 
@@ -9827,7 +9827,7 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(102));
+__export(__webpack_require__(103));
 //# sourceMappingURL=main.js.map
 
 /***/ }),
@@ -10536,7 +10536,7 @@ curve.edwards = __webpack_require__(150);
 var aesid = __webpack_require__(177)
 var fixProc = __webpack_require__(178)
 var ciphers = __webpack_require__(43)
-var compat = __webpack_require__(59)
+var compat = __webpack_require__(60)
 module.exports = parseKeys
 
 function parseKeys (buffer) {
@@ -10648,8 +10648,8 @@ function decrypt (data, password) {
 var base = exports;
 
 base.Reporter = __webpack_require__(205).Reporter;
-base.DecoderBuffer = __webpack_require__(90).DecoderBuffer;
-base.EncoderBuffer = __webpack_require__(90).EncoderBuffer;
+base.DecoderBuffer = __webpack_require__(91).DecoderBuffer;
+base.EncoderBuffer = __webpack_require__(91).EncoderBuffer;
 base.Node = __webpack_require__(206);
 
 
@@ -11287,12 +11287,12 @@ function isUndefined(arg) {
 /* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(51);
+exports = module.exports = __webpack_require__(52);
 exports.Stream = exports;
 exports.Readable = exports;
 exports.Writable = __webpack_require__(40);
 exports.Duplex = __webpack_require__(14);
-exports.Transform = __webpack_require__(54);
+exports.Transform = __webpack_require__(55);
 exports.PassThrough = __webpack_require__(116);
 
 
@@ -11378,7 +11378,7 @@ var internalUtil = {
 /*</replacement>*/
 
 /*<replacement>*/
-var Stream = __webpack_require__(52);
+var Stream = __webpack_require__(53);
 /*</replacement>*/
 
 /*<replacement>*/
@@ -11392,7 +11392,7 @@ function _isUint8Array(obj) {
 }
 /*</replacement>*/
 
-var destroyImpl = __webpack_require__(53);
+var destroyImpl = __webpack_require__(54);
 
 util.inherits(Writable, Stream);
 
@@ -12210,9 +12210,9 @@ var exports = module.exports = function SHA (algorithm) {
 exports.sha = __webpack_require__(121)
 exports.sha1 = __webpack_require__(122)
 exports.sha224 = __webpack_require__(123)
-exports.sha256 = __webpack_require__(55)
+exports.sha256 = __webpack_require__(56)
 exports.sha384 = __webpack_require__(124)
-exports.sha512 = __webpack_require__(56)
+exports.sha512 = __webpack_require__(57)
 
 
 /***/ }),
@@ -12404,6 +12404,654 @@ exports.CHANNELS_BANK_PROTOCOL = "https://channelelements.org/protocols/bank";
 
 /***/ }),
 /* 49 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+// This is free and unencumbered software released into the public domain.
+// See LICENSE.md for more information.
+
+//
+// Utilities
+//
+
+/**
+ * @param {number} a The number to test.
+ * @param {number} min The minimum value in the range, inclusive.
+ * @param {number} max The maximum value in the range, inclusive.
+ * @return {boolean} True if a >= min and a <= max.
+ */
+function inRange(a, min, max) {
+  return min <= a && a <= max;
+}
+
+/**
+ * @param {*} o
+ * @return {Object}
+ */
+function ToDictionary(o) {
+  if (o === undefined) return {};
+  if (o === Object(o)) return o;
+  throw TypeError('Could not convert argument to dictionary');
+}
+
+/**
+ * @param {string} string Input string of UTF-16 code units.
+ * @return {!Array.<number>} Code points.
+ */
+function stringToCodePoints(string) {
+  // https://heycam.github.io/webidl/#dfn-obtain-unicode
+
+  // 1. Let S be the DOMString value.
+  var s = String(string);
+
+  // 2. Let n be the length of S.
+  var n = s.length;
+
+  // 3. Initialize i to 0.
+  var i = 0;
+
+  // 4. Initialize U to be an empty sequence of Unicode characters.
+  var u = [];
+
+  // 5. While i < n:
+  while (i < n) {
+
+    // 1. Let c be the code unit in S at index i.
+    var c = s.charCodeAt(i);
+
+    // 2. Depending on the value of c:
+
+    // c < 0xD800 or c > 0xDFFF
+    if (c < 0xD800 || c > 0xDFFF) {
+      // Append to U the Unicode character with code point c.
+      u.push(c);
+    }
+
+    // 0xDC00 ≤ c ≤ 0xDFFF
+    else if (0xDC00 <= c && c <= 0xDFFF) {
+      // Append to U a U+FFFD REPLACEMENT CHARACTER.
+      u.push(0xFFFD);
+    }
+
+    // 0xD800 ≤ c ≤ 0xDBFF
+    else if (0xD800 <= c && c <= 0xDBFF) {
+      // 1. If i = n−1, then append to U a U+FFFD REPLACEMENT
+      // CHARACTER.
+      if (i === n - 1) {
+        u.push(0xFFFD);
+      }
+      // 2. Otherwise, i < n−1:
+      else {
+        // 1. Let d be the code unit in S at index i+1.
+        var d = string.charCodeAt(i + 1);
+
+        // 2. If 0xDC00 ≤ d ≤ 0xDFFF, then:
+        if (0xDC00 <= d && d <= 0xDFFF) {
+          // 1. Let a be c & 0x3FF.
+          var a = c & 0x3FF;
+
+          // 2. Let b be d & 0x3FF.
+          var b = d & 0x3FF;
+
+          // 3. Append to U the Unicode character with code point
+          // 2^16+2^10*a+b.
+          u.push(0x10000 + (a << 10) + b);
+
+          // 4. Set i to i+1.
+          i += 1;
+        }
+
+        // 3. Otherwise, d < 0xDC00 or d > 0xDFFF. Append to U a
+        // U+FFFD REPLACEMENT CHARACTER.
+        else  {
+          u.push(0xFFFD);
+        }
+      }
+    }
+
+    // 3. Set i to i+1.
+    i += 1;
+  }
+
+  // 6. Return U.
+  return u;
+}
+
+/**
+ * @param {!Array.<number>} code_points Array of code points.
+ * @return {string} string String of UTF-16 code units.
+ */
+function codePointsToString(code_points) {
+  var s = '';
+  for (var i = 0; i < code_points.length; ++i) {
+    var cp = code_points[i];
+    if (cp <= 0xFFFF) {
+      s += String.fromCharCode(cp);
+    } else {
+      cp -= 0x10000;
+      s += String.fromCharCode((cp >> 10) + 0xD800,
+                               (cp & 0x3FF) + 0xDC00);
+    }
+  }
+  return s;
+}
+
+
+//
+// Implementation of Encoding specification
+// https://encoding.spec.whatwg.org/
+//
+
+//
+// 3. Terminology
+//
+
+/**
+ * End-of-stream is a special token that signifies no more tokens
+ * are in the stream.
+ * @const
+ */ var end_of_stream = -1;
+
+/**
+ * A stream represents an ordered sequence of tokens.
+ *
+ * @constructor
+ * @param {!(Array.<number>|Uint8Array)} tokens Array of tokens that provide the
+ * stream.
+ */
+function Stream(tokens) {
+  /** @type {!Array.<number>} */
+  this.tokens = [].slice.call(tokens);
+}
+
+Stream.prototype = {
+  /**
+   * @return {boolean} True if end-of-stream has been hit.
+   */
+  endOfStream: function() {
+    return !this.tokens.length;
+  },
+
+  /**
+   * When a token is read from a stream, the first token in the
+   * stream must be returned and subsequently removed, and
+   * end-of-stream must be returned otherwise.
+   *
+   * @return {number} Get the next token from the stream, or
+   * end_of_stream.
+   */
+   read: function() {
+    if (!this.tokens.length)
+      return end_of_stream;
+     return this.tokens.shift();
+   },
+
+  /**
+   * When one or more tokens are prepended to a stream, those tokens
+   * must be inserted, in given order, before the first token in the
+   * stream.
+   *
+   * @param {(number|!Array.<number>)} token The token(s) to prepend to the stream.
+   */
+  prepend: function(token) {
+    if (Array.isArray(token)) {
+      var tokens = /**@type {!Array.<number>}*/(token);
+      while (tokens.length)
+        this.tokens.unshift(tokens.pop());
+    } else {
+      this.tokens.unshift(token);
+    }
+  },
+
+  /**
+   * When one or more tokens are pushed to a stream, those tokens
+   * must be inserted, in given order, after the last token in the
+   * stream.
+   *
+   * @param {(number|!Array.<number>)} token The tokens(s) to prepend to the stream.
+   */
+  push: function(token) {
+    if (Array.isArray(token)) {
+      var tokens = /**@type {!Array.<number>}*/(token);
+      while (tokens.length)
+        this.tokens.push(tokens.shift());
+    } else {
+      this.tokens.push(token);
+    }
+  }
+};
+
+//
+// 4. Encodings
+//
+
+// 4.1 Encoders and decoders
+
+/** @const */
+var finished = -1;
+
+/**
+ * @param {boolean} fatal If true, decoding errors raise an exception.
+ * @param {number=} opt_code_point Override the standard fallback code point.
+ * @return {number} The code point to insert on a decoding error.
+ */
+function decoderError(fatal, opt_code_point) {
+  if (fatal)
+    throw TypeError('Decoder error');
+  return opt_code_point || 0xFFFD;
+}
+
+//
+// 7. API
+//
+
+/** @const */ var DEFAULT_ENCODING = 'utf-8';
+
+// 7.1 Interface TextDecoder
+
+/**
+ * @constructor
+ * @param {string=} encoding The label of the encoding;
+ *     defaults to 'utf-8'.
+ * @param {Object=} options
+ */
+function TextDecoder(encoding, options) {
+  if (!(this instanceof TextDecoder)) {
+    return new TextDecoder(encoding, options);
+  }
+  encoding = encoding !== undefined ? String(encoding).toLowerCase() : DEFAULT_ENCODING;
+  if (encoding !== DEFAULT_ENCODING) {
+    throw new Error('Encoding not supported. Only utf-8 is supported');
+  }
+  options = ToDictionary(options);
+
+  /** @private @type {boolean} */
+  this._streaming = false;
+  /** @private @type {boolean} */
+  this._BOMseen = false;
+  /** @private @type {?Decoder} */
+  this._decoder = null;
+  /** @private @type {boolean} */
+  this._fatal = Boolean(options['fatal']);
+  /** @private @type {boolean} */
+  this._ignoreBOM = Boolean(options['ignoreBOM']);
+
+  Object.defineProperty(this, 'encoding', {value: 'utf-8'});
+  Object.defineProperty(this, 'fatal', {value: this._fatal});
+  Object.defineProperty(this, 'ignoreBOM', {value: this._ignoreBOM});
+}
+
+TextDecoder.prototype = {
+  /**
+   * @param {ArrayBufferView=} input The buffer of bytes to decode.
+   * @param {Object=} options
+   * @return {string} The decoded string.
+   */
+  decode: function decode(input, options) {
+    var bytes;
+    if (typeof input === 'object' && input instanceof ArrayBuffer) {
+      bytes = new Uint8Array(input);
+    } else if (typeof input === 'object' && 'buffer' in input &&
+               input.buffer instanceof ArrayBuffer) {
+      bytes = new Uint8Array(input.buffer,
+                             input.byteOffset,
+                             input.byteLength);
+    } else {
+      bytes = new Uint8Array(0);
+    }
+
+    options = ToDictionary(options);
+
+    if (!this._streaming) {
+      this._decoder = new UTF8Decoder({fatal: this._fatal});
+      this._BOMseen = false;
+    }
+    this._streaming = Boolean(options['stream']);
+
+    var input_stream = new Stream(bytes);
+
+    var code_points = [];
+
+    /** @type {?(number|!Array.<number>)} */
+    var result;
+
+    while (!input_stream.endOfStream()) {
+      result = this._decoder.handler(input_stream, input_stream.read());
+      if (result === finished)
+        break;
+      if (result === null)
+        continue;
+      if (Array.isArray(result))
+        code_points.push.apply(code_points, /**@type {!Array.<number>}*/(result));
+      else
+        code_points.push(result);
+    }
+    if (!this._streaming) {
+      do {
+        result = this._decoder.handler(input_stream, input_stream.read());
+        if (result === finished)
+          break;
+        if (result === null)
+          continue;
+        if (Array.isArray(result))
+          code_points.push.apply(code_points, /**@type {!Array.<number>}*/(result));
+        else
+          code_points.push(result);
+      } while (!input_stream.endOfStream());
+      this._decoder = null;
+    }
+
+    if (code_points.length) {
+      // If encoding is one of utf-8, utf-16be, and utf-16le, and
+      // ignore BOM flag and BOM seen flag are unset, run these
+      // subsubsteps:
+      if (['utf-8'].indexOf(this.encoding) !== -1 &&
+          !this._ignoreBOM && !this._BOMseen) {
+        // If token is U+FEFF, set BOM seen flag.
+        if (code_points[0] === 0xFEFF) {
+          this._BOMseen = true;
+          code_points.shift();
+        } else {
+          // Otherwise, if token is not end-of-stream, set BOM seen
+          // flag and append token to output.
+          this._BOMseen = true;
+        }
+      }
+    }
+
+    return codePointsToString(code_points);
+  }
+};
+
+// 7.2 Interface TextEncoder
+
+/**
+ * @constructor
+ * @param {string=} encoding The label of the encoding;
+ *     defaults to 'utf-8'.
+ * @param {Object=} options
+ */
+function TextEncoder(encoding, options) {
+  if (!(this instanceof TextEncoder))
+    return new TextEncoder(encoding, options);
+  encoding = encoding !== undefined ? String(encoding).toLowerCase() : DEFAULT_ENCODING;
+  if (encoding !== DEFAULT_ENCODING) {
+    throw new Error('Encoding not supported. Only utf-8 is supported');
+  }
+  options = ToDictionary(options);
+
+  /** @private @type {boolean} */
+  this._streaming = false;
+  /** @private @type {?Encoder} */
+  this._encoder = null;
+  /** @private @type {{fatal: boolean}} */
+  this._options = {fatal: Boolean(options['fatal'])};
+
+  Object.defineProperty(this, 'encoding', {value: 'utf-8'});
+}
+
+TextEncoder.prototype = {
+  /**
+   * @param {string=} opt_string The string to encode.
+   * @param {Object=} options
+   * @return {Uint8Array} Encoded bytes, as a Uint8Array.
+   */
+  encode: function encode(opt_string, options) {
+    opt_string = opt_string ? String(opt_string) : '';
+    options = ToDictionary(options);
+
+    // NOTE: This option is nonstandard. None of the encodings
+    // permitted for encoding (i.e. UTF-8, UTF-16) are stateful,
+    // so streaming is not necessary.
+    if (!this._streaming)
+      this._encoder = new UTF8Encoder(this._options);
+    this._streaming = Boolean(options['stream']);
+
+    var bytes = [];
+    var input_stream = new Stream(stringToCodePoints(opt_string));
+    /** @type {?(number|!Array.<number>)} */
+    var result;
+    while (!input_stream.endOfStream()) {
+      result = this._encoder.handler(input_stream, input_stream.read());
+      if (result === finished)
+        break;
+      if (Array.isArray(result))
+        bytes.push.apply(bytes, /**@type {!Array.<number>}*/(result));
+      else
+        bytes.push(result);
+    }
+    if (!this._streaming) {
+      while (true) {
+        result = this._encoder.handler(input_stream, input_stream.read());
+        if (result === finished)
+          break;
+        if (Array.isArray(result))
+          bytes.push.apply(bytes, /**@type {!Array.<number>}*/(result));
+        else
+          bytes.push(result);
+      }
+      this._encoder = null;
+    }
+    return new Uint8Array(bytes);
+  }
+};
+
+//
+// 8. The encoding
+//
+
+// 8.1 utf-8
+
+/**
+ * @constructor
+ * @implements {Decoder}
+ * @param {{fatal: boolean}} options
+ */
+function UTF8Decoder(options) {
+  var fatal = options.fatal;
+
+  // utf-8's decoder's has an associated utf-8 code point, utf-8
+  // bytes seen, and utf-8 bytes needed (all initially 0), a utf-8
+  // lower boundary (initially 0x80), and a utf-8 upper boundary
+  // (initially 0xBF).
+  var /** @type {number} */ utf8_code_point = 0,
+      /** @type {number} */ utf8_bytes_seen = 0,
+      /** @type {number} */ utf8_bytes_needed = 0,
+      /** @type {number} */ utf8_lower_boundary = 0x80,
+      /** @type {number} */ utf8_upper_boundary = 0xBF;
+
+  /**
+   * @param {Stream} stream The stream of bytes being decoded.
+   * @param {number} bite The next byte read from the stream.
+   * @return {?(number|!Array.<number>)} The next code point(s)
+   *     decoded, or null if not enough data exists in the input
+   *     stream to decode a complete code point.
+   */
+  this.handler = function(stream, bite) {
+    // 1. If byte is end-of-stream and utf-8 bytes needed is not 0,
+    // set utf-8 bytes needed to 0 and return error.
+    if (bite === end_of_stream && utf8_bytes_needed !== 0) {
+      utf8_bytes_needed = 0;
+      return decoderError(fatal);
+    }
+
+    // 2. If byte is end-of-stream, return finished.
+    if (bite === end_of_stream)
+      return finished;
+
+    // 3. If utf-8 bytes needed is 0, based on byte:
+    if (utf8_bytes_needed === 0) {
+
+      // 0x00 to 0x7F
+      if (inRange(bite, 0x00, 0x7F)) {
+        // Return a code point whose value is byte.
+        return bite;
+      }
+
+      // 0xC2 to 0xDF
+      if (inRange(bite, 0xC2, 0xDF)) {
+        // Set utf-8 bytes needed to 1 and utf-8 code point to byte
+        // − 0xC0.
+        utf8_bytes_needed = 1;
+        utf8_code_point = bite - 0xC0;
+      }
+
+      // 0xE0 to 0xEF
+      else if (inRange(bite, 0xE0, 0xEF)) {
+        // 1. If byte is 0xE0, set utf-8 lower boundary to 0xA0.
+        if (bite === 0xE0)
+          utf8_lower_boundary = 0xA0;
+        // 2. If byte is 0xED, set utf-8 upper boundary to 0x9F.
+        if (bite === 0xED)
+          utf8_upper_boundary = 0x9F;
+        // 3. Set utf-8 bytes needed to 2 and utf-8 code point to
+        // byte − 0xE0.
+        utf8_bytes_needed = 2;
+        utf8_code_point = bite - 0xE0;
+      }
+
+      // 0xF0 to 0xF4
+      else if (inRange(bite, 0xF0, 0xF4)) {
+        // 1. If byte is 0xF0, set utf-8 lower boundary to 0x90.
+        if (bite === 0xF0)
+          utf8_lower_boundary = 0x90;
+        // 2. If byte is 0xF4, set utf-8 upper boundary to 0x8F.
+        if (bite === 0xF4)
+          utf8_upper_boundary = 0x8F;
+        // 3. Set utf-8 bytes needed to 3 and utf-8 code point to
+        // byte − 0xF0.
+        utf8_bytes_needed = 3;
+        utf8_code_point = bite - 0xF0;
+      }
+
+      // Otherwise
+      else {
+        // Return error.
+        return decoderError(fatal);
+      }
+
+      // Then (byte is in the range 0xC2 to 0xF4) set utf-8 code
+      // point to utf-8 code point << (6 × utf-8 bytes needed) and
+      // return continue.
+      utf8_code_point = utf8_code_point << (6 * utf8_bytes_needed);
+      return null;
+    }
+
+    // 4. If byte is not in the range utf-8 lower boundary to utf-8
+    // upper boundary, run these substeps:
+    if (!inRange(bite, utf8_lower_boundary, utf8_upper_boundary)) {
+
+      // 1. Set utf-8 code point, utf-8 bytes needed, and utf-8
+      // bytes seen to 0, set utf-8 lower boundary to 0x80, and set
+      // utf-8 upper boundary to 0xBF.
+      utf8_code_point = utf8_bytes_needed = utf8_bytes_seen = 0;
+      utf8_lower_boundary = 0x80;
+      utf8_upper_boundary = 0xBF;
+
+      // 2. Prepend byte to stream.
+      stream.prepend(bite);
+
+      // 3. Return error.
+      return decoderError(fatal);
+    }
+
+    // 5. Set utf-8 lower boundary to 0x80 and utf-8 upper boundary
+    // to 0xBF.
+    utf8_lower_boundary = 0x80;
+    utf8_upper_boundary = 0xBF;
+
+    // 6. Increase utf-8 bytes seen by one and set utf-8 code point
+    // to utf-8 code point + (byte − 0x80) << (6 × (utf-8 bytes
+    // needed − utf-8 bytes seen)).
+    utf8_bytes_seen += 1;
+    utf8_code_point += (bite - 0x80) << (6 * (utf8_bytes_needed - utf8_bytes_seen));
+
+    // 7. If utf-8 bytes seen is not equal to utf-8 bytes needed,
+    // continue.
+    if (utf8_bytes_seen !== utf8_bytes_needed)
+      return null;
+
+    // 8. Let code point be utf-8 code point.
+    var code_point = utf8_code_point;
+
+    // 9. Set utf-8 code point, utf-8 bytes needed, and utf-8 bytes
+    // seen to 0.
+    utf8_code_point = utf8_bytes_needed = utf8_bytes_seen = 0;
+
+    // 10. Return a code point whose value is code point.
+    return code_point;
+  };
+}
+
+/**
+ * @constructor
+ * @implements {Encoder}
+ * @param {{fatal: boolean}} options
+ */
+function UTF8Encoder(options) {
+  var fatal = options.fatal;
+  /**
+   * @param {Stream} stream Input stream.
+   * @param {number} code_point Next code point read from the stream.
+   * @return {(number|!Array.<number>)} Byte(s) to emit.
+   */
+  this.handler = function(stream, code_point) {
+    // 1. If code point is end-of-stream, return finished.
+    if (code_point === end_of_stream)
+      return finished;
+
+    // 2. If code point is in the range U+0000 to U+007F, return a
+    // byte whose value is code point.
+    if (inRange(code_point, 0x0000, 0x007f))
+      return code_point;
+
+    // 3. Set count and offset based on the range code point is in:
+    var count, offset;
+    // U+0080 to U+07FF:    1 and 0xC0
+    if (inRange(code_point, 0x0080, 0x07FF)) {
+      count = 1;
+      offset = 0xC0;
+    }
+    // U+0800 to U+FFFF:    2 and 0xE0
+    else if (inRange(code_point, 0x0800, 0xFFFF)) {
+      count = 2;
+      offset = 0xE0;
+    }
+    // U+10000 to U+10FFFF: 3 and 0xF0
+    else if (inRange(code_point, 0x10000, 0x10FFFF)) {
+      count = 3;
+      offset = 0xF0;
+    }
+
+    // 4.Let bytes be a byte sequence whose first byte is (code
+    // point >> (6 × count)) + offset.
+    var bytes = [(code_point >> (6 * count)) + offset];
+
+    // 5. Run these substeps while count is greater than 0:
+    while (count > 0) {
+
+      // 1. Set temp to code point >> (6 × (count − 1)).
+      var temp = code_point >> (6 * (count - 1));
+
+      // 2. Append to bytes 0x80 | (temp & 0x3F).
+      bytes.push(0x80 | (temp & 0x3F));
+
+      // 3. Decrease count by one.
+      count -= 1;
+    }
+
+    // 6. Return bytes bytes, in order.
+    return bytes;
+  };
+}
+
+exports.TextEncoder = TextEncoder;
+exports.TextDecoder = TextDecoder;
+
+/***/ }),
+/* 50 */
 /***/ (function(module, exports) {
 
 var toString = {}.toString;
@@ -12414,7 +13062,7 @@ module.exports = Array.isArray || function (arr) {
 
 
 /***/ }),
-/* 50 */
+/* 51 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12422,7 +13070,7 @@ module.exports = Array.isArray || function (arr) {
 
 exports.randomBytes = exports.rng = exports.pseudoRandomBytes = exports.prng = __webpack_require__(18)
 exports.createHash = exports.Hash = __webpack_require__(13)
-exports.createHmac = exports.Hmac = __webpack_require__(57)
+exports.createHmac = exports.Hmac = __webpack_require__(58)
 
 var algos = __webpack_require__(126)
 var algoKeys = Object.keys(algos)
@@ -12431,7 +13079,7 @@ exports.getHashes = function () {
   return hashes
 }
 
-var p = __webpack_require__(59)
+var p = __webpack_require__(60)
 exports.pbkdf2 = p.pbkdf2
 exports.pbkdf2Sync = p.pbkdf2Sync
 
@@ -12513,7 +13161,7 @@ exports.constants = {
 
 
 /***/ }),
-/* 51 */
+/* 52 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12548,7 +13196,7 @@ var processNextTick = __webpack_require__(27);
 module.exports = Readable;
 
 /*<replacement>*/
-var isArray = __webpack_require__(49);
+var isArray = __webpack_require__(50);
 /*</replacement>*/
 
 /*<replacement>*/
@@ -12566,7 +13214,7 @@ var EElistenerCount = function (emitter, type) {
 /*</replacement>*/
 
 /*<replacement>*/
-var Stream = __webpack_require__(52);
+var Stream = __webpack_require__(53);
 /*</replacement>*/
 
 // TODO(bmeurer): Change this back to const once hole checks are
@@ -12598,7 +13246,7 @@ if (debugUtil && debugUtil.debuglog) {
 /*</replacement>*/
 
 var BufferList = __webpack_require__(112);
-var destroyImpl = __webpack_require__(53);
+var destroyImpl = __webpack_require__(54);
 var StringDecoder;
 
 util.inherits(Readable, Stream);
@@ -13527,14 +14175,14 @@ function indexOf(xs, x) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(10)))
 
 /***/ }),
-/* 52 */
+/* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(38).EventEmitter;
 
 
 /***/ }),
-/* 53 */
+/* 54 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13612,7 +14260,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 54 */
+/* 55 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13832,7 +14480,7 @@ function done(stream, er, data) {
 }
 
 /***/ }),
-/* 55 */
+/* 56 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {/**
@@ -13973,7 +14621,7 @@ module.exports = Sha256
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0).Buffer))
 
 /***/ }),
-/* 56 */
+/* 57 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {var inherits = __webpack_require__(1)
@@ -14239,7 +14887,7 @@ module.exports = Sha512
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0).Buffer))
 
 /***/ }),
-/* 57 */
+/* 58 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14308,7 +14956,7 @@ module.exports = function createHmac (alg, key) {
 
 
 /***/ }),
-/* 58 */
+/* 59 */
 /***/ (function(module, exports) {
 
 module.exports = {
@@ -14465,17 +15113,17 @@ module.exports = {
 };
 
 /***/ }),
-/* 59 */
+/* 60 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
 exports.pbkdf2 = __webpack_require__(127)
 
-exports.pbkdf2Sync = __webpack_require__(62)
+exports.pbkdf2Sync = __webpack_require__(63)
 
 
 /***/ }),
-/* 60 */
+/* 61 */
 /***/ (function(module, exports) {
 
 var MAX_ALLOC = Math.pow(2, 30) - 1 // default in iojs
@@ -14499,7 +15147,7 @@ module.exports = function (iterations, keylen) {
 
 
 /***/ }),
-/* 61 */
+/* 62 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {var defaultEncoding
@@ -14516,15 +15164,15 @@ module.exports = defaultEncoding
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(10)))
 
 /***/ }),
-/* 62 */
+/* 63 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var md5 = __webpack_require__(26)
 var rmd160 = __webpack_require__(37)
 var sha = __webpack_require__(42)
 
-var checkParameters = __webpack_require__(60)
-var defaultEncoding = __webpack_require__(61)
+var checkParameters = __webpack_require__(61)
+var defaultEncoding = __webpack_require__(62)
 var Buffer = __webpack_require__(3).Buffer
 var ZEROS = Buffer.alloc(128)
 var sizes = {
@@ -14624,7 +15272,7 @@ module.exports = function (password, salt, iterations, keylen, digest) {
 
 
 /***/ }),
-/* 63 */
+/* 64 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {var aes = __webpack_require__(29)
@@ -14656,7 +15304,7 @@ StreamCipher.prototype._final = function () {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0).Buffer))
 
 /***/ }),
-/* 64 */
+/* 65 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {var aes = __webpack_require__(29)
@@ -14760,7 +15408,7 @@ function xorTest (a, b) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0).Buffer))
 
 /***/ }),
-/* 65 */
+/* 66 */
 /***/ (function(module, exports) {
 
 exports.encrypt = function (self, block) {
@@ -14772,7 +15420,7 @@ exports.decrypt = function (self, block) {
 
 
 /***/ }),
-/* 66 */
+/* 67 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var xor = __webpack_require__(20)
@@ -14795,7 +15443,7 @@ exports.decrypt = function (self, block) {
 
 
 /***/ }),
-/* 67 */
+/* 68 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {var xor = __webpack_require__(20)
@@ -14833,7 +15481,7 @@ function encryptStart (self, data, decrypt) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0).Buffer))
 
 /***/ }),
-/* 68 */
+/* 69 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {function encryptByte (self, byteParam, decrypt) {
@@ -14855,7 +15503,7 @@ exports.encrypt = function (self, chunk, decrypt) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0).Buffer))
 
 /***/ }),
-/* 69 */
+/* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {function encryptByte (self, byteParam, decrypt) {
@@ -14896,7 +15544,7 @@ function shiftIn (buffer, value) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0).Buffer))
 
 /***/ }),
-/* 70 */
+/* 71 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {var xor = __webpack_require__(20)
@@ -14919,7 +15567,7 @@ exports.encrypt = function (self, chunk) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0).Buffer))
 
 /***/ }),
-/* 71 */
+/* 72 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var randomBytes = __webpack_require__(18);
@@ -14928,7 +15576,7 @@ findPrime.simpleSieve = simpleSieve;
 findPrime.fermatTest = fermatTest;
 var BN = __webpack_require__(2);
 var TWENTYFOUR = new BN(24);
-var MillerRabin = __webpack_require__(72);
+var MillerRabin = __webpack_require__(73);
 var millerRabin = new MillerRabin();
 var ONE = new BN(1);
 var TWO = new BN(2);
@@ -15030,7 +15678,7 @@ function findPrime(bits, gen) {
 
 
 /***/ }),
-/* 72 */
+/* 73 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var bn = __webpack_require__(2);
@@ -15149,7 +15797,7 @@ MillerRabin.prototype.getDivisor = function getDivisor(n, k) {
 
 
 /***/ }),
-/* 73 */
+/* 74 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15214,7 +15862,7 @@ utils.encode = function encode(arr, enc) {
 
 
 /***/ }),
-/* 74 */
+/* 75 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15270,7 +15918,7 @@ exports.g1_256 = g1_256;
 
 
 /***/ }),
-/* 75 */
+/* 76 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15278,7 +15926,7 @@ exports.g1_256 = g1_256;
 
 var utils = __webpack_require__(7);
 var common = __webpack_require__(21);
-var shaCommon = __webpack_require__(74);
+var shaCommon = __webpack_require__(75);
 var assert = __webpack_require__(5);
 
 var sum32 = utils.sum32;
@@ -15382,7 +16030,7 @@ SHA256.prototype._digest = function digest(enc) {
 
 
 /***/ }),
-/* 76 */
+/* 77 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15719,7 +16367,7 @@ function g1_512_lo(xh, xl) {
 
 
 /***/ }),
-/* 77 */
+/* 78 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var indexOf = __webpack_require__(168);
@@ -15863,7 +16511,7 @@ exports.createContext = Script.createContext = function (context) {
 
 
 /***/ }),
-/* 78 */
+/* 79 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var inherits = __webpack_require__(1);
@@ -15985,7 +16633,7 @@ EncoderBuffer.prototype.join = function join(out, offset) {
 
 
 /***/ }),
-/* 79 */
+/* 80 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var constants = exports;
@@ -16010,7 +16658,7 @@ constants.der = __webpack_require__(171);
 
 
 /***/ }),
-/* 80 */
+/* 81 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var inherits = __webpack_require__(1);
@@ -16340,7 +16988,7 @@ function derDecodeLen(buf, primitive, fail) {
 
 
 /***/ }),
-/* 81 */
+/* 82 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var inherits = __webpack_require__(1);
@@ -16641,7 +17289,7 @@ function encodeTag(tag, primitive, cls, reporter) {
 
 
 /***/ }),
-/* 82 */
+/* 83 */
 /***/ (function(module, exports) {
 
 module.exports = {
@@ -16654,7 +17302,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 83 */
+/* 84 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {var createHash = __webpack_require__(13);
@@ -16676,7 +17324,7 @@ function i2ops(c) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0).Buffer))
 
 /***/ }),
-/* 84 */
+/* 85 */
 /***/ (function(module, exports) {
 
 module.exports = function xor(a, b) {
@@ -16689,7 +17337,7 @@ module.exports = function xor(a, b) {
 };
 
 /***/ }),
-/* 85 */
+/* 86 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {var bn = __webpack_require__(2);
@@ -16705,7 +17353,7 @@ module.exports = withPublic;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0).Buffer))
 
 /***/ }),
-/* 86 */
+/* 87 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16714,7 +17362,7 @@ module.exports = __webpack_require__(184)(__webpack_require__(188))
 
 
 /***/ }),
-/* 87 */
+/* 88 */
 /***/ (function(module, exports) {
 
 module.exports = {
@@ -16755,7 +17403,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 88 */
+/* 89 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17253,7 +17901,7 @@ var objectKeys = Object.keys || function (obj) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ }),
-/* 89 */
+/* 90 */
 /***/ (function(module, exports) {
 
 /**
@@ -17272,7 +17920,7 @@ module.exports = function isHexPrefixed(str) {
 
 
 /***/ }),
-/* 90 */
+/* 91 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var inherits = __webpack_require__(1);
@@ -17394,7 +18042,7 @@ EncoderBuffer.prototype.join = function join(out, offset) {
 
 
 /***/ }),
-/* 91 */
+/* 92 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var constants = exports;
@@ -17419,7 +18067,7 @@ constants.der = __webpack_require__(207);
 
 
 /***/ }),
-/* 92 */
+/* 93 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var inherits = __webpack_require__(1);
@@ -17716,7 +18364,7 @@ function derDecodeLen(buf, primitive, fail) {
 
 
 /***/ }),
-/* 93 */
+/* 94 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var inherits = __webpack_require__(1);
@@ -17994,7 +18642,7 @@ function encodeTag(tag, primitive, cls, reporter) {
 
 
 /***/ }),
-/* 94 */
+/* 95 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {/*global module, process*/
@@ -18056,13 +18704,13 @@ module.exports = DataStream;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(10)))
 
 /***/ }),
-/* 95 */
+/* 96 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var bufferEqual = __webpack_require__(231);
 var base64url = __webpack_require__(36);
 var Buffer = __webpack_require__(3).Buffer;
-var crypto = __webpack_require__(50);
+var crypto = __webpack_require__(51);
 var formatEcdsa = __webpack_require__(232);
 var util = __webpack_require__(24);
 
@@ -18187,7 +18835,7 @@ module.exports = function jwa(algorithm) {
 
 
 /***/ }),
-/* 96 */
+/* 97 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*global module*/
@@ -18203,22 +18851,23 @@ module.exports = function toString(obj) {
 
 
 /***/ }),
-/* 97 */
+/* 98 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var client_1 = __webpack_require__(98);
+var client_1 = __webpack_require__(99);
 var channels_common_1 = __webpack_require__(25);
 var channel_controller_1 = __webpack_require__(237);
+var text_encoding_utf_8_1 = __webpack_require__(49);
 var anyWindow = window;
 anyWindow.ChannelsClient = client_1.ChannelsClient;
 anyWindow.ChannelIdentityUtils = channels_common_1.ChannelIdentityUtils;
 anyWindow.ChannelController = channel_controller_1.ChannelController;
 if (!anyWindow.TextDecoder) {
     console.log("TextDecoder not present. Setting pollyfil");
-    anyWindow.TextDecoder = TextDecoder;
+    anyWindow.TextDecoder = text_encoding_utf_8_1.TextDecoder;
 }
 else {
     console.log("TextDecoder detected.");
@@ -18226,7 +18875,7 @@ else {
 
 
 /***/ }),
-/* 98 */
+/* 99 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18270,9 +18919,9 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-var rest_1 = __webpack_require__(99);
-var db_1 = __webpack_require__(100);
-var transport_1 = __webpack_require__(101);
+var rest_1 = __webpack_require__(100);
+var db_1 = __webpack_require__(101);
+var transport_1 = __webpack_require__(102);
 __export(__webpack_require__(25));
 var SWITCH_PROTOCOL_VERSION = 1;
 var ChannelsClient = (function () {
@@ -18989,7 +19638,7 @@ exports.ChannelsClient = ChannelsClient;
 
 
 /***/ }),
-/* 99 */
+/* 100 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19178,7 +19827,7 @@ exports.Rest = Rest;
 
 
 /***/ }),
-/* 100 */
+/* 101 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19299,7 +19948,7 @@ exports.ClientDb = ClientDb;
 
 
 /***/ }),
-/* 101 */
+/* 102 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19644,7 +20293,7 @@ exports.TransportManager = TransportManager;
 
 
 /***/ }),
-/* 102 */
+/* 103 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19653,9 +20302,9 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(103));
-__export(__webpack_require__(48));
 __export(__webpack_require__(104));
+__export(__webpack_require__(48));
+__export(__webpack_require__(105));
 __export(__webpack_require__(106));
 __export(__webpack_require__(235));
 __export(__webpack_require__(48));
@@ -19663,7 +20312,7 @@ __export(__webpack_require__(236));
 //# sourceMappingURL=index.js.map
 
 /***/ }),
-/* 103 */
+/* 104 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19673,13 +20322,13 @@ exports.CHANNELS_SWITCH_PROTOCOL = "https://channelelements.org/protocols/switch
 //# sourceMappingURL=channel-switching-rest.js.map
 
 /***/ }),
-/* 104 */
+/* 105 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var text_encoding_utf_8_1 = __webpack_require__(105);
+var text_encoding_utf_8_1 = __webpack_require__(49);
 var ChannelMessageUtils = (function () {
     function ChannelMessageUtils() {
     }
@@ -19825,662 +20474,14 @@ exports.ChannelMessageUtils = ChannelMessageUtils;
 //# sourceMappingURL=channel-message-utils.js.map
 
 /***/ }),
-/* 105 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-// This is free and unencumbered software released into the public domain.
-// See LICENSE.md for more information.
-
-//
-// Utilities
-//
-
-/**
- * @param {number} a The number to test.
- * @param {number} min The minimum value in the range, inclusive.
- * @param {number} max The maximum value in the range, inclusive.
- * @return {boolean} True if a >= min and a <= max.
- */
-function inRange(a, min, max) {
-  return min <= a && a <= max;
-}
-
-/**
- * @param {*} o
- * @return {Object}
- */
-function ToDictionary(o) {
-  if (o === undefined) return {};
-  if (o === Object(o)) return o;
-  throw TypeError('Could not convert argument to dictionary');
-}
-
-/**
- * @param {string} string Input string of UTF-16 code units.
- * @return {!Array.<number>} Code points.
- */
-function stringToCodePoints(string) {
-  // https://heycam.github.io/webidl/#dfn-obtain-unicode
-
-  // 1. Let S be the DOMString value.
-  var s = String(string);
-
-  // 2. Let n be the length of S.
-  var n = s.length;
-
-  // 3. Initialize i to 0.
-  var i = 0;
-
-  // 4. Initialize U to be an empty sequence of Unicode characters.
-  var u = [];
-
-  // 5. While i < n:
-  while (i < n) {
-
-    // 1. Let c be the code unit in S at index i.
-    var c = s.charCodeAt(i);
-
-    // 2. Depending on the value of c:
-
-    // c < 0xD800 or c > 0xDFFF
-    if (c < 0xD800 || c > 0xDFFF) {
-      // Append to U the Unicode character with code point c.
-      u.push(c);
-    }
-
-    // 0xDC00 ≤ c ≤ 0xDFFF
-    else if (0xDC00 <= c && c <= 0xDFFF) {
-      // Append to U a U+FFFD REPLACEMENT CHARACTER.
-      u.push(0xFFFD);
-    }
-
-    // 0xD800 ≤ c ≤ 0xDBFF
-    else if (0xD800 <= c && c <= 0xDBFF) {
-      // 1. If i = n−1, then append to U a U+FFFD REPLACEMENT
-      // CHARACTER.
-      if (i === n - 1) {
-        u.push(0xFFFD);
-      }
-      // 2. Otherwise, i < n−1:
-      else {
-        // 1. Let d be the code unit in S at index i+1.
-        var d = string.charCodeAt(i + 1);
-
-        // 2. If 0xDC00 ≤ d ≤ 0xDFFF, then:
-        if (0xDC00 <= d && d <= 0xDFFF) {
-          // 1. Let a be c & 0x3FF.
-          var a = c & 0x3FF;
-
-          // 2. Let b be d & 0x3FF.
-          var b = d & 0x3FF;
-
-          // 3. Append to U the Unicode character with code point
-          // 2^16+2^10*a+b.
-          u.push(0x10000 + (a << 10) + b);
-
-          // 4. Set i to i+1.
-          i += 1;
-        }
-
-        // 3. Otherwise, d < 0xDC00 or d > 0xDFFF. Append to U a
-        // U+FFFD REPLACEMENT CHARACTER.
-        else  {
-          u.push(0xFFFD);
-        }
-      }
-    }
-
-    // 3. Set i to i+1.
-    i += 1;
-  }
-
-  // 6. Return U.
-  return u;
-}
-
-/**
- * @param {!Array.<number>} code_points Array of code points.
- * @return {string} string String of UTF-16 code units.
- */
-function codePointsToString(code_points) {
-  var s = '';
-  for (var i = 0; i < code_points.length; ++i) {
-    var cp = code_points[i];
-    if (cp <= 0xFFFF) {
-      s += String.fromCharCode(cp);
-    } else {
-      cp -= 0x10000;
-      s += String.fromCharCode((cp >> 10) + 0xD800,
-                               (cp & 0x3FF) + 0xDC00);
-    }
-  }
-  return s;
-}
-
-
-//
-// Implementation of Encoding specification
-// https://encoding.spec.whatwg.org/
-//
-
-//
-// 3. Terminology
-//
-
-/**
- * End-of-stream is a special token that signifies no more tokens
- * are in the stream.
- * @const
- */ var end_of_stream = -1;
-
-/**
- * A stream represents an ordered sequence of tokens.
- *
- * @constructor
- * @param {!(Array.<number>|Uint8Array)} tokens Array of tokens that provide the
- * stream.
- */
-function Stream(tokens) {
-  /** @type {!Array.<number>} */
-  this.tokens = [].slice.call(tokens);
-}
-
-Stream.prototype = {
-  /**
-   * @return {boolean} True if end-of-stream has been hit.
-   */
-  endOfStream: function() {
-    return !this.tokens.length;
-  },
-
-  /**
-   * When a token is read from a stream, the first token in the
-   * stream must be returned and subsequently removed, and
-   * end-of-stream must be returned otherwise.
-   *
-   * @return {number} Get the next token from the stream, or
-   * end_of_stream.
-   */
-   read: function() {
-    if (!this.tokens.length)
-      return end_of_stream;
-     return this.tokens.shift();
-   },
-
-  /**
-   * When one or more tokens are prepended to a stream, those tokens
-   * must be inserted, in given order, before the first token in the
-   * stream.
-   *
-   * @param {(number|!Array.<number>)} token The token(s) to prepend to the stream.
-   */
-  prepend: function(token) {
-    if (Array.isArray(token)) {
-      var tokens = /**@type {!Array.<number>}*/(token);
-      while (tokens.length)
-        this.tokens.unshift(tokens.pop());
-    } else {
-      this.tokens.unshift(token);
-    }
-  },
-
-  /**
-   * When one or more tokens are pushed to a stream, those tokens
-   * must be inserted, in given order, after the last token in the
-   * stream.
-   *
-   * @param {(number|!Array.<number>)} token The tokens(s) to prepend to the stream.
-   */
-  push: function(token) {
-    if (Array.isArray(token)) {
-      var tokens = /**@type {!Array.<number>}*/(token);
-      while (tokens.length)
-        this.tokens.push(tokens.shift());
-    } else {
-      this.tokens.push(token);
-    }
-  }
-};
-
-//
-// 4. Encodings
-//
-
-// 4.1 Encoders and decoders
-
-/** @const */
-var finished = -1;
-
-/**
- * @param {boolean} fatal If true, decoding errors raise an exception.
- * @param {number=} opt_code_point Override the standard fallback code point.
- * @return {number} The code point to insert on a decoding error.
- */
-function decoderError(fatal, opt_code_point) {
-  if (fatal)
-    throw TypeError('Decoder error');
-  return opt_code_point || 0xFFFD;
-}
-
-//
-// 7. API
-//
-
-/** @const */ var DEFAULT_ENCODING = 'utf-8';
-
-// 7.1 Interface TextDecoder
-
-/**
- * @constructor
- * @param {string=} encoding The label of the encoding;
- *     defaults to 'utf-8'.
- * @param {Object=} options
- */
-function TextDecoder(encoding, options) {
-  if (!(this instanceof TextDecoder)) {
-    return new TextDecoder(encoding, options);
-  }
-  encoding = encoding !== undefined ? String(encoding).toLowerCase() : DEFAULT_ENCODING;
-  if (encoding !== DEFAULT_ENCODING) {
-    throw new Error('Encoding not supported. Only utf-8 is supported');
-  }
-  options = ToDictionary(options);
-
-  /** @private @type {boolean} */
-  this._streaming = false;
-  /** @private @type {boolean} */
-  this._BOMseen = false;
-  /** @private @type {?Decoder} */
-  this._decoder = null;
-  /** @private @type {boolean} */
-  this._fatal = Boolean(options['fatal']);
-  /** @private @type {boolean} */
-  this._ignoreBOM = Boolean(options['ignoreBOM']);
-
-  Object.defineProperty(this, 'encoding', {value: 'utf-8'});
-  Object.defineProperty(this, 'fatal', {value: this._fatal});
-  Object.defineProperty(this, 'ignoreBOM', {value: this._ignoreBOM});
-}
-
-TextDecoder.prototype = {
-  /**
-   * @param {ArrayBufferView=} input The buffer of bytes to decode.
-   * @param {Object=} options
-   * @return {string} The decoded string.
-   */
-  decode: function decode(input, options) {
-    var bytes;
-    if (typeof input === 'object' && input instanceof ArrayBuffer) {
-      bytes = new Uint8Array(input);
-    } else if (typeof input === 'object' && 'buffer' in input &&
-               input.buffer instanceof ArrayBuffer) {
-      bytes = new Uint8Array(input.buffer,
-                             input.byteOffset,
-                             input.byteLength);
-    } else {
-      bytes = new Uint8Array(0);
-    }
-
-    options = ToDictionary(options);
-
-    if (!this._streaming) {
-      this._decoder = new UTF8Decoder({fatal: this._fatal});
-      this._BOMseen = false;
-    }
-    this._streaming = Boolean(options['stream']);
-
-    var input_stream = new Stream(bytes);
-
-    var code_points = [];
-
-    /** @type {?(number|!Array.<number>)} */
-    var result;
-
-    while (!input_stream.endOfStream()) {
-      result = this._decoder.handler(input_stream, input_stream.read());
-      if (result === finished)
-        break;
-      if (result === null)
-        continue;
-      if (Array.isArray(result))
-        code_points.push.apply(code_points, /**@type {!Array.<number>}*/(result));
-      else
-        code_points.push(result);
-    }
-    if (!this._streaming) {
-      do {
-        result = this._decoder.handler(input_stream, input_stream.read());
-        if (result === finished)
-          break;
-        if (result === null)
-          continue;
-        if (Array.isArray(result))
-          code_points.push.apply(code_points, /**@type {!Array.<number>}*/(result));
-        else
-          code_points.push(result);
-      } while (!input_stream.endOfStream());
-      this._decoder = null;
-    }
-
-    if (code_points.length) {
-      // If encoding is one of utf-8, utf-16be, and utf-16le, and
-      // ignore BOM flag and BOM seen flag are unset, run these
-      // subsubsteps:
-      if (['utf-8'].indexOf(this.encoding) !== -1 &&
-          !this._ignoreBOM && !this._BOMseen) {
-        // If token is U+FEFF, set BOM seen flag.
-        if (code_points[0] === 0xFEFF) {
-          this._BOMseen = true;
-          code_points.shift();
-        } else {
-          // Otherwise, if token is not end-of-stream, set BOM seen
-          // flag and append token to output.
-          this._BOMseen = true;
-        }
-      }
-    }
-
-    return codePointsToString(code_points);
-  }
-};
-
-// 7.2 Interface TextEncoder
-
-/**
- * @constructor
- * @param {string=} encoding The label of the encoding;
- *     defaults to 'utf-8'.
- * @param {Object=} options
- */
-function TextEncoder(encoding, options) {
-  if (!(this instanceof TextEncoder))
-    return new TextEncoder(encoding, options);
-  encoding = encoding !== undefined ? String(encoding).toLowerCase() : DEFAULT_ENCODING;
-  if (encoding !== DEFAULT_ENCODING) {
-    throw new Error('Encoding not supported. Only utf-8 is supported');
-  }
-  options = ToDictionary(options);
-
-  /** @private @type {boolean} */
-  this._streaming = false;
-  /** @private @type {?Encoder} */
-  this._encoder = null;
-  /** @private @type {{fatal: boolean}} */
-  this._options = {fatal: Boolean(options['fatal'])};
-
-  Object.defineProperty(this, 'encoding', {value: 'utf-8'});
-}
-
-TextEncoder.prototype = {
-  /**
-   * @param {string=} opt_string The string to encode.
-   * @param {Object=} options
-   * @return {Uint8Array} Encoded bytes, as a Uint8Array.
-   */
-  encode: function encode(opt_string, options) {
-    opt_string = opt_string ? String(opt_string) : '';
-    options = ToDictionary(options);
-
-    // NOTE: This option is nonstandard. None of the encodings
-    // permitted for encoding (i.e. UTF-8, UTF-16) are stateful,
-    // so streaming is not necessary.
-    if (!this._streaming)
-      this._encoder = new UTF8Encoder(this._options);
-    this._streaming = Boolean(options['stream']);
-
-    var bytes = [];
-    var input_stream = new Stream(stringToCodePoints(opt_string));
-    /** @type {?(number|!Array.<number>)} */
-    var result;
-    while (!input_stream.endOfStream()) {
-      result = this._encoder.handler(input_stream, input_stream.read());
-      if (result === finished)
-        break;
-      if (Array.isArray(result))
-        bytes.push.apply(bytes, /**@type {!Array.<number>}*/(result));
-      else
-        bytes.push(result);
-    }
-    if (!this._streaming) {
-      while (true) {
-        result = this._encoder.handler(input_stream, input_stream.read());
-        if (result === finished)
-          break;
-        if (Array.isArray(result))
-          bytes.push.apply(bytes, /**@type {!Array.<number>}*/(result));
-        else
-          bytes.push(result);
-      }
-      this._encoder = null;
-    }
-    return new Uint8Array(bytes);
-  }
-};
-
-//
-// 8. The encoding
-//
-
-// 8.1 utf-8
-
-/**
- * @constructor
- * @implements {Decoder}
- * @param {{fatal: boolean}} options
- */
-function UTF8Decoder(options) {
-  var fatal = options.fatal;
-
-  // utf-8's decoder's has an associated utf-8 code point, utf-8
-  // bytes seen, and utf-8 bytes needed (all initially 0), a utf-8
-  // lower boundary (initially 0x80), and a utf-8 upper boundary
-  // (initially 0xBF).
-  var /** @type {number} */ utf8_code_point = 0,
-      /** @type {number} */ utf8_bytes_seen = 0,
-      /** @type {number} */ utf8_bytes_needed = 0,
-      /** @type {number} */ utf8_lower_boundary = 0x80,
-      /** @type {number} */ utf8_upper_boundary = 0xBF;
-
-  /**
-   * @param {Stream} stream The stream of bytes being decoded.
-   * @param {number} bite The next byte read from the stream.
-   * @return {?(number|!Array.<number>)} The next code point(s)
-   *     decoded, or null if not enough data exists in the input
-   *     stream to decode a complete code point.
-   */
-  this.handler = function(stream, bite) {
-    // 1. If byte is end-of-stream and utf-8 bytes needed is not 0,
-    // set utf-8 bytes needed to 0 and return error.
-    if (bite === end_of_stream && utf8_bytes_needed !== 0) {
-      utf8_bytes_needed = 0;
-      return decoderError(fatal);
-    }
-
-    // 2. If byte is end-of-stream, return finished.
-    if (bite === end_of_stream)
-      return finished;
-
-    // 3. If utf-8 bytes needed is 0, based on byte:
-    if (utf8_bytes_needed === 0) {
-
-      // 0x00 to 0x7F
-      if (inRange(bite, 0x00, 0x7F)) {
-        // Return a code point whose value is byte.
-        return bite;
-      }
-
-      // 0xC2 to 0xDF
-      if (inRange(bite, 0xC2, 0xDF)) {
-        // Set utf-8 bytes needed to 1 and utf-8 code point to byte
-        // − 0xC0.
-        utf8_bytes_needed = 1;
-        utf8_code_point = bite - 0xC0;
-      }
-
-      // 0xE0 to 0xEF
-      else if (inRange(bite, 0xE0, 0xEF)) {
-        // 1. If byte is 0xE0, set utf-8 lower boundary to 0xA0.
-        if (bite === 0xE0)
-          utf8_lower_boundary = 0xA0;
-        // 2. If byte is 0xED, set utf-8 upper boundary to 0x9F.
-        if (bite === 0xED)
-          utf8_upper_boundary = 0x9F;
-        // 3. Set utf-8 bytes needed to 2 and utf-8 code point to
-        // byte − 0xE0.
-        utf8_bytes_needed = 2;
-        utf8_code_point = bite - 0xE0;
-      }
-
-      // 0xF0 to 0xF4
-      else if (inRange(bite, 0xF0, 0xF4)) {
-        // 1. If byte is 0xF0, set utf-8 lower boundary to 0x90.
-        if (bite === 0xF0)
-          utf8_lower_boundary = 0x90;
-        // 2. If byte is 0xF4, set utf-8 upper boundary to 0x8F.
-        if (bite === 0xF4)
-          utf8_upper_boundary = 0x8F;
-        // 3. Set utf-8 bytes needed to 3 and utf-8 code point to
-        // byte − 0xF0.
-        utf8_bytes_needed = 3;
-        utf8_code_point = bite - 0xF0;
-      }
-
-      // Otherwise
-      else {
-        // Return error.
-        return decoderError(fatal);
-      }
-
-      // Then (byte is in the range 0xC2 to 0xF4) set utf-8 code
-      // point to utf-8 code point << (6 × utf-8 bytes needed) and
-      // return continue.
-      utf8_code_point = utf8_code_point << (6 * utf8_bytes_needed);
-      return null;
-    }
-
-    // 4. If byte is not in the range utf-8 lower boundary to utf-8
-    // upper boundary, run these substeps:
-    if (!inRange(bite, utf8_lower_boundary, utf8_upper_boundary)) {
-
-      // 1. Set utf-8 code point, utf-8 bytes needed, and utf-8
-      // bytes seen to 0, set utf-8 lower boundary to 0x80, and set
-      // utf-8 upper boundary to 0xBF.
-      utf8_code_point = utf8_bytes_needed = utf8_bytes_seen = 0;
-      utf8_lower_boundary = 0x80;
-      utf8_upper_boundary = 0xBF;
-
-      // 2. Prepend byte to stream.
-      stream.prepend(bite);
-
-      // 3. Return error.
-      return decoderError(fatal);
-    }
-
-    // 5. Set utf-8 lower boundary to 0x80 and utf-8 upper boundary
-    // to 0xBF.
-    utf8_lower_boundary = 0x80;
-    utf8_upper_boundary = 0xBF;
-
-    // 6. Increase utf-8 bytes seen by one and set utf-8 code point
-    // to utf-8 code point + (byte − 0x80) << (6 × (utf-8 bytes
-    // needed − utf-8 bytes seen)).
-    utf8_bytes_seen += 1;
-    utf8_code_point += (bite - 0x80) << (6 * (utf8_bytes_needed - utf8_bytes_seen));
-
-    // 7. If utf-8 bytes seen is not equal to utf-8 bytes needed,
-    // continue.
-    if (utf8_bytes_seen !== utf8_bytes_needed)
-      return null;
-
-    // 8. Let code point be utf-8 code point.
-    var code_point = utf8_code_point;
-
-    // 9. Set utf-8 code point, utf-8 bytes needed, and utf-8 bytes
-    // seen to 0.
-    utf8_code_point = utf8_bytes_needed = utf8_bytes_seen = 0;
-
-    // 10. Return a code point whose value is code point.
-    return code_point;
-  };
-}
-
-/**
- * @constructor
- * @implements {Encoder}
- * @param {{fatal: boolean}} options
- */
-function UTF8Encoder(options) {
-  var fatal = options.fatal;
-  /**
-   * @param {Stream} stream Input stream.
-   * @param {number} code_point Next code point read from the stream.
-   * @return {(number|!Array.<number>)} Byte(s) to emit.
-   */
-  this.handler = function(stream, code_point) {
-    // 1. If code point is end-of-stream, return finished.
-    if (code_point === end_of_stream)
-      return finished;
-
-    // 2. If code point is in the range U+0000 to U+007F, return a
-    // byte whose value is code point.
-    if (inRange(code_point, 0x0000, 0x007f))
-      return code_point;
-
-    // 3. Set count and offset based on the range code point is in:
-    var count, offset;
-    // U+0080 to U+07FF:    1 and 0xC0
-    if (inRange(code_point, 0x0080, 0x07FF)) {
-      count = 1;
-      offset = 0xC0;
-    }
-    // U+0800 to U+FFFF:    2 and 0xE0
-    else if (inRange(code_point, 0x0800, 0xFFFF)) {
-      count = 2;
-      offset = 0xE0;
-    }
-    // U+10000 to U+10FFFF: 3 and 0xF0
-    else if (inRange(code_point, 0x10000, 0x10FFFF)) {
-      count = 3;
-      offset = 0xF0;
-    }
-
-    // 4.Let bytes be a byte sequence whose first byte is (code
-    // point >> (6 × count)) + offset.
-    var bytes = [(code_point >> (6 * count)) + offset];
-
-    // 5. Run these substeps while count is greater than 0:
-    while (count > 0) {
-
-      // 1. Set temp to code point >> (6 × (count − 1)).
-      var temp = code_point >> (6 * (count - 1));
-
-      // 2. Append to bytes 0x80 | (temp & 0x3F).
-      bytes.push(0x80 | (temp & 0x3F));
-
-      // 3. Decrease count by one.
-      count -= 1;
-    }
-
-    // 6. Return bytes bytes, in order.
-    return bytes;
-  };
-}
-
-exports.TextEncoder = TextEncoder;
-exports.TextDecoder = TextDecoder;
-
-/***/ }),
 /* 106 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 /* WEBPACK VAR INJECTION */(function(Buffer) {
 Object.defineProperty(exports, "__esModule", { value: true });
-var crypto = __webpack_require__(50);
-var secp256k1 = __webpack_require__(86);
+var crypto = __webpack_require__(51);
+var secp256k1 = __webpack_require__(87);
 var ethereumUtils = __webpack_require__(189);
 var KeyEncoder = __webpack_require__(201);
 var jws = __webpack_require__(227);
@@ -21375,7 +21376,7 @@ function config (name) {
 
 module.exports = PassThrough;
 
-var Transform = __webpack_require__(54);
+var Transform = __webpack_require__(55);
 
 /*<replacement>*/
 var util = __webpack_require__(19);
@@ -21640,7 +21641,7 @@ module.exports = Sha1
  */
 
 var inherits = __webpack_require__(1)
-var Sha256 = __webpack_require__(55)
+var Sha256 = __webpack_require__(56)
 var Hash = __webpack_require__(15)
 
 var W = new Array(64)
@@ -21691,7 +21692,7 @@ module.exports = Sha224
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {var inherits = __webpack_require__(1)
-var SHA512 = __webpack_require__(56)
+var SHA512 = __webpack_require__(57)
 var Hash = __webpack_require__(15)
 
 var W = new Array(160)
@@ -21806,16 +21807,16 @@ module.exports = Hmac
 /* 126 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(58)
+module.exports = __webpack_require__(59)
 
 
 /***/ }),
 /* 127 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(global, process) {var checkParameters = __webpack_require__(60)
-var defaultEncoding = __webpack_require__(61)
-var sync = __webpack_require__(62)
+/* WEBPACK VAR INJECTION */(function(global, process) {var checkParameters = __webpack_require__(61)
+var defaultEncoding = __webpack_require__(62)
+var sync = __webpack_require__(63)
 var Buffer = __webpack_require__(3).Buffer
 
 var ZERO_BUF
@@ -22002,8 +22003,8 @@ var Transform = __webpack_require__(12)
 var inherits = __webpack_require__(1)
 var modes = __webpack_require__(30)
 var ebtk = __webpack_require__(28)
-var StreamCipher = __webpack_require__(63)
-var AuthCipher = __webpack_require__(64)
+var StreamCipher = __webpack_require__(64)
+var AuthCipher = __webpack_require__(65)
 inherits(Cipher, Transform)
 function Cipher (mode, key, iv) {
   if (!(this instanceof Cipher)) {
@@ -22074,12 +22075,12 @@ Splitter.prototype.flush = function () {
   return out
 }
 var modelist = {
-  ECB: __webpack_require__(65),
-  CBC: __webpack_require__(66),
-  CFB: __webpack_require__(67),
-  CFB8: __webpack_require__(68),
-  CFB1: __webpack_require__(69),
-  OFB: __webpack_require__(70),
+  ECB: __webpack_require__(66),
+  CBC: __webpack_require__(67),
+  CFB: __webpack_require__(68),
+  CFB8: __webpack_require__(69),
+  CFB1: __webpack_require__(70),
+  OFB: __webpack_require__(71),
   CTR: __webpack_require__(31),
   GCM: __webpack_require__(31)
 }
@@ -22235,8 +22236,8 @@ function xor (a, b) {
 var Transform = __webpack_require__(12)
 var inherits = __webpack_require__(1)
 var modes = __webpack_require__(30)
-var StreamCipher = __webpack_require__(63)
-var AuthCipher = __webpack_require__(64)
+var StreamCipher = __webpack_require__(64)
+var AuthCipher = __webpack_require__(65)
 var ebtk = __webpack_require__(28)
 
 inherits(Decipher, Transform)
@@ -22323,12 +22324,12 @@ function unpad (last) {
 }
 
 var modelist = {
-  ECB: __webpack_require__(65),
-  CBC: __webpack_require__(66),
-  CFB: __webpack_require__(67),
-  CFB8: __webpack_require__(68),
-  CFB1: __webpack_require__(69),
-  OFB: __webpack_require__(70),
+  ECB: __webpack_require__(66),
+  CBC: __webpack_require__(67),
+  CFB: __webpack_require__(68),
+  CFB8: __webpack_require__(69),
+  CFB1: __webpack_require__(70),
+  OFB: __webpack_require__(71),
   CTR: __webpack_require__(31),
   GCM: __webpack_require__(31)
 }
@@ -23150,7 +23151,7 @@ exports['des-ede'] = {
 /* 139 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(Buffer) {var generatePrime = __webpack_require__(71)
+/* WEBPACK VAR INJECTION */(function(Buffer) {var generatePrime = __webpack_require__(72)
 var primes = __webpack_require__(141)
 
 var DH = __webpack_require__(142)
@@ -23245,14 +23246,14 @@ module.exports = {
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {var BN = __webpack_require__(2);
-var MillerRabin = __webpack_require__(72);
+var MillerRabin = __webpack_require__(73);
 var millerRabin = new MillerRabin();
 var TWENTYFOUR = new BN(24);
 var ELEVEN = new BN(11);
 var TEN = new BN(10);
 var THREE = new BN(3);
 var SEVEN = new BN(7);
-var primes = __webpack_require__(71);
+var primes = __webpack_require__(72);
 var randomBytes = __webpack_require__(18);
 module.exports = DH;
 
@@ -23421,7 +23422,7 @@ var inherits = __webpack_require__(1)
 var sign = __webpack_require__(144)
 var verify = __webpack_require__(179)
 
-var algorithms = __webpack_require__(58)
+var algorithms = __webpack_require__(59)
 Object.keys(algorithms).forEach(function (key) {
   algorithms[key].id = new Buffer(algorithms[key].id, 'hex')
   algorithms[key.toLowerCase()] = algorithms[key]
@@ -23514,12 +23515,12 @@ module.exports = {
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {// much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
-var createHmac = __webpack_require__(57)
+var createHmac = __webpack_require__(58)
 var crt = __webpack_require__(47)
 var EC = __webpack_require__(4).ec
 var BN = __webpack_require__(2)
 var parseKeys = __webpack_require__(33)
-var curves = __webpack_require__(82)
+var curves = __webpack_require__(83)
 
 function sign (hash, key, hashType, signType, tag) {
   var priv = parseKeys(key)
@@ -23798,7 +23799,7 @@ module.exports = {
 var utils = exports;
 var BN = __webpack_require__(2);
 var minAssert = __webpack_require__(5);
-var minUtils = __webpack_require__(73);
+var minUtils = __webpack_require__(74);
 
 utils.assert = minAssert;
 utils.toArray = minUtils.toArray;
@@ -26090,9 +26091,9 @@ defineCurve('secp256k1', {
 
 exports.sha1 = __webpack_require__(153);
 exports.sha224 = __webpack_require__(154);
-exports.sha256 = __webpack_require__(75);
+exports.sha256 = __webpack_require__(76);
 exports.sha384 = __webpack_require__(155);
-exports.sha512 = __webpack_require__(76);
+exports.sha512 = __webpack_require__(77);
 
 
 /***/ }),
@@ -26104,7 +26105,7 @@ exports.sha512 = __webpack_require__(76);
 
 var utils = __webpack_require__(7);
 var common = __webpack_require__(21);
-var shaCommon = __webpack_require__(74);
+var shaCommon = __webpack_require__(75);
 
 var rotl32 = utils.rotl32;
 var sum32 = utils.sum32;
@@ -26184,7 +26185,7 @@ SHA1.prototype._digest = function digest(enc) {
 
 
 var utils = __webpack_require__(7);
-var SHA256 = __webpack_require__(75);
+var SHA256 = __webpack_require__(76);
 
 function SHA224() {
   if (!(this instanceof SHA224))
@@ -26222,7 +26223,7 @@ SHA224.prototype._digest = function digest(enc) {
 
 var utils = __webpack_require__(7);
 
-var SHA512 = __webpack_require__(76);
+var SHA512 = __webpack_require__(77);
 
 function SHA384() {
   if (!(this instanceof SHA384))
@@ -27503,7 +27504,7 @@ EC.prototype.getKeyRecoveryParam = function(e, signature, Q, enc) {
 
 
 var hash = __webpack_require__(16);
-var utils = __webpack_require__(73);
+var utils = __webpack_require__(74);
 var assert = __webpack_require__(5);
 
 function HmacDRBG(options) {
@@ -28337,7 +28338,7 @@ function Entity(name, body) {
 Entity.prototype._createNamed = function createNamed(base) {
   var named;
   try {
-    named = __webpack_require__(77).runInThisContext(
+    named = __webpack_require__(78).runInThisContext(
       '(function ' + this.name + '(entity) {\n' +
       '  this._initNamed(entity);\n' +
       '})'
@@ -29166,7 +29167,7 @@ Node.prototype._isPrintstr = function isPrintstr(str) {
 /* 171 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var constants = __webpack_require__(79);
+var constants = __webpack_require__(80);
 
 exports.tagClass = {
   0: 'universal',
@@ -29216,7 +29217,7 @@ exports.tagByName = constants._reverse(exports.tag);
 
 var decoders = exports;
 
-decoders.der = __webpack_require__(80);
+decoders.der = __webpack_require__(81);
 decoders.pem = __webpack_require__(173);
 
 
@@ -29227,7 +29228,7 @@ decoders.pem = __webpack_require__(173);
 var inherits = __webpack_require__(1);
 var Buffer = __webpack_require__(0).Buffer;
 
-var DERDecoder = __webpack_require__(80);
+var DERDecoder = __webpack_require__(81);
 
 function PEMDecoder(entity) {
   DERDecoder.call(this, entity);
@@ -29281,7 +29282,7 @@ PEMDecoder.prototype.decode = function decode(data, options) {
 
 var encoders = exports;
 
-encoders.der = __webpack_require__(81);
+encoders.der = __webpack_require__(82);
 encoders.pem = __webpack_require__(175);
 
 
@@ -29291,7 +29292,7 @@ encoders.pem = __webpack_require__(175);
 
 var inherits = __webpack_require__(1);
 
-var DEREncoder = __webpack_require__(81);
+var DEREncoder = __webpack_require__(82);
 
 function PEMEncoder(entity) {
   DEREncoder.call(this, entity);
@@ -29471,7 +29472,7 @@ module.exports = function (okey, password) {
 var BN = __webpack_require__(2)
 var EC = __webpack_require__(4).ec
 var parseKeys = __webpack_require__(33)
-var curves = __webpack_require__(82)
+var curves = __webpack_require__(83)
 
 function verify (sig, hash, key, signType, tag) {
   var pub = parseKeys(key)
@@ -29704,10 +29705,10 @@ exports.publicDecrypt = function publicDecrypt(key, buf) {
 /* WEBPACK VAR INJECTION */(function(Buffer) {var parseKeys = __webpack_require__(33);
 var randomBytes = __webpack_require__(18);
 var createHash = __webpack_require__(13);
-var mgf = __webpack_require__(83);
-var xor = __webpack_require__(84);
+var mgf = __webpack_require__(84);
+var xor = __webpack_require__(85);
 var bn = __webpack_require__(2);
-var withPublic = __webpack_require__(85);
+var withPublic = __webpack_require__(86);
 var crt = __webpack_require__(47);
 
 var constants = {
@@ -29803,12 +29804,12 @@ function nonZero(len, crypto) {
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {var parseKeys = __webpack_require__(33);
-var mgf = __webpack_require__(83);
-var xor = __webpack_require__(84);
+var mgf = __webpack_require__(84);
+var xor = __webpack_require__(85);
 var bn = __webpack_require__(2);
 var crt = __webpack_require__(47);
 var createHash = __webpack_require__(13);
-var withPublic = __webpack_require__(85);
+var withPublic = __webpack_require__(86);
 module.exports = function privateDecrypt(private_key, enc, reverse) {
   var padding;
   if (private_key.padding) {
@@ -29920,7 +29921,7 @@ function compare(a, b){
 
 var assert = __webpack_require__(185)
 var der = __webpack_require__(186)
-var messages = __webpack_require__(87)
+var messages = __webpack_require__(88)
 
 function initCompressedValue (value, defaultValue) {
   if (value === undefined) return defaultValue
@@ -30537,7 +30538,7 @@ var createHash = __webpack_require__(13)
 var BN = __webpack_require__(2)
 var EC = __webpack_require__(4).ec
 
-var messages = __webpack_require__(87)
+var messages = __webpack_require__(88)
 
 var ec = new EC('secp256k1')
 var ecparams = ec.curve
@@ -30786,8 +30787,8 @@ exports.ecdhUnsafe = function (publicKey, privateKey, compressed) {
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {const createKeccakHash = __webpack_require__(190)
-const secp256k1 = __webpack_require__(86)
-const assert = __webpack_require__(88)
+const secp256k1 = __webpack_require__(87)
+const assert = __webpack_require__(89)
 const rlp = __webpack_require__(198)
 const BN = __webpack_require__(2)
 const createHash = __webpack_require__(13)
@@ -31986,7 +31987,7 @@ if (typeof Object.create === 'function') {
 /* 198 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(Buffer) {const assert = __webpack_require__(88)
+/* WEBPACK VAR INJECTION */(function(Buffer) {const assert = __webpack_require__(89)
 /**
  * RLP Encoding based on: https://github.com/ethereum/wiki/wiki/%5BEnglish%5D-RLP
  * This function takes in a data, convert it to buffer if not, and a length for recursion
@@ -32225,7 +32226,7 @@ function toBuffer (v) {
 "use strict";
 /* WEBPACK VAR INJECTION */(function(Buffer) {
 
-var isHexPrefixed = __webpack_require__(89);
+var isHexPrefixed = __webpack_require__(90);
 var stripHexPrefix = __webpack_require__(200);
 
 /**
@@ -32449,7 +32450,7 @@ module.exports = {
 /* 200 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var isHexPrefixed = __webpack_require__(89);
+var isHexPrefixed = __webpack_require__(90);
 
 /**
  * Removes '0x' from a given `String` is present
@@ -34993,7 +34994,7 @@ function Entity(name, body) {
 Entity.prototype._createNamed = function createNamed(base) {
   var named;
   try {
-    named = __webpack_require__(77).runInThisContext(
+    named = __webpack_require__(78).runInThisContext(
       '(function ' + this.name + '(entity) {\n' +
       '  this._initNamed(entity);\n' +
       '})'
@@ -35750,7 +35751,7 @@ Node.prototype._encodePrimitive = function encodePrimitive(tag, data) {
 /* 207 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var constants = __webpack_require__(91);
+var constants = __webpack_require__(92);
 
 exports.tagClass = {
   0: 'universal',
@@ -35800,7 +35801,7 @@ exports.tagByName = constants._reverse(exports.tag);
 
 var decoders = exports;
 
-decoders.der = __webpack_require__(92);
+decoders.der = __webpack_require__(93);
 decoders.pem = __webpack_require__(209);
 
 
@@ -35812,7 +35813,7 @@ var inherits = __webpack_require__(1);
 var Buffer = __webpack_require__(0).Buffer;
 
 var asn1 = __webpack_require__(17);
-var DERDecoder = __webpack_require__(92);
+var DERDecoder = __webpack_require__(93);
 
 function PEMDecoder(entity) {
   DERDecoder.call(this, entity);
@@ -35866,7 +35867,7 @@ PEMDecoder.prototype.decode = function decode(data, options) {
 
 var encoders = exports;
 
-encoders.der = __webpack_require__(93);
+encoders.der = __webpack_require__(94);
 encoders.pem = __webpack_require__(211);
 
 
@@ -35878,7 +35879,7 @@ var inherits = __webpack_require__(1);
 var Buffer = __webpack_require__(0).Buffer;
 
 var asn1 = __webpack_require__(17);
-var DEREncoder = __webpack_require__(93);
+var DEREncoder = __webpack_require__(94);
 
 function PEMEncoder(entity) {
   DEREncoder.call(this, entity);
@@ -39978,10 +39979,10 @@ exports.createVerify = function createVerify(opts) {
 
 /*global module*/
 var base64url = __webpack_require__(36);
-var DataStream = __webpack_require__(94);
-var jwa = __webpack_require__(95);
+var DataStream = __webpack_require__(95);
+var jwa = __webpack_require__(96);
 var Stream = __webpack_require__(11);
-var toString = __webpack_require__(96);
+var toString = __webpack_require__(97);
 var util = __webpack_require__(24);
 
 function jwsSecuredInput(header, payload, encoding) {
@@ -40392,10 +40393,10 @@ module.exports = getParamBytesForAlg;
 
 /*global module*/
 var base64url = __webpack_require__(36);
-var DataStream = __webpack_require__(94);
-var jwa = __webpack_require__(95);
+var DataStream = __webpack_require__(95);
+var jwa = __webpack_require__(96);
 var Stream = __webpack_require__(11);
-var toString = __webpack_require__(96);
+var toString = __webpack_require__(97);
 var util = __webpack_require__(24);
 var JWS_REGEX = /^[a-zA-Z0-9\-_]+?\.[a-zA-Z0-9\-_]+?\.([a-zA-Z0-9\-_]+)?$/;
 
